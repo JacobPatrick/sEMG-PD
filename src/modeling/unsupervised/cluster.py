@@ -7,14 +7,18 @@
 
 @description: 使用 K-means 聚类分析区分治疗前后的肌电信号样本
 """
+
 import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
+
 # from sklearn.decomposition import PCA
-from src.feature_engineering.features_extraction import HandCraftedFeaturesExtractor
+from src.feature_engineering.features_extraction import (
+    HandCraftedFeaturesExtractor,
+)
 
 
 os.environ['OMP_NUM_THREADS'] = '1'
@@ -25,6 +29,7 @@ class Clustering:
     cluster = Clustering()
     cluster.k_means(all_flattened_features_mat)
     """
+
     def __init__(self):
         pass
 
@@ -45,7 +50,7 @@ class Clustering:
         # feature_mat = np.stack(feature_lst_0, axis=0)  # 形成形状为 (n_channels, n_segments, n_features) 的特征矩阵
         # flattened_features = feature_mat.flatten()  # 展平特征矩阵
         # labels = [i for i in range(6) for _ in range(6)] # 一个患者，疗前疗后各三组动作，每组动作采6个样本
-        labels = [i for i in range(2) for _ in range(6)]    # 只对静坐样本聚类
+        labels = [i for i in range(2) for _ in range(6)]  # 只对静坐样本聚类
 
         # step2: 数据标准化
         scaler = StandardScaler()
@@ -64,13 +69,16 @@ class Clustering:
         cluster_labels = kmeans.fit_predict(scaled_data)
 
         # step5: 结果分析
-        cluster_results = pd.DataFrame({
-            'Treatment Status': labels,
-            'Cluster': cluster_labels
-        })
+        cluster_results = pd.DataFrame(
+            {'Treatment Status': labels, 'Cluster': cluster_labels}
+        )
 
         # 查看每个簇中治疗前和治疗后的样本数量
-        cluster_summary = cluster_results.groupby(['Cluster', 'Treatment Status']).size().unstack()
+        cluster_summary = (
+            cluster_results.groupby(['Cluster', 'Treatment Status'])
+            .size()
+            .unstack()
+        )
         print(cluster_summary)
 
         # # PCA 降维高维特征
@@ -98,7 +106,7 @@ def find_optimal_k(scaled_data, k_range):
     # 找到二阶差分绝对值最大的位置，对应最优 k 值
     optimal_k = k_range_[np.argmax(np.abs(second_diff)) + 1]
     print(f"Optimal k: {optimal_k}")
-    
+
     return optimal_k
 
 
@@ -127,7 +135,7 @@ if __name__ == '__main__':
 
     #                 # segment the EMG data
     #                 # segmented_emg = processed_emg.segment_emg()
-                    
+
     #                 # samle the EMG data
     #                 sampled_emg = processed_emg.sample_emg()
     #                 for i in range(len(sampled_emg)):

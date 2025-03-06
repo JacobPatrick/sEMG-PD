@@ -1,12 +1,18 @@
-# import yaml
-import json
+import yaml
 
-# def load_yaml_config(file_path):
-#     with open(file_path, 'r') as f:
-#         config = yaml.safe_load(f)
-#     return config
 
-def load_json_config(file_path):
-    with open(file_path, 'r') as f:
-        config = json.load(f)
-    return config
+def load_config(cfg_path):
+    """
+    load config file
+    :param cfg_path: config file path
+    :return: config
+    """
+    try:
+        with open(cfg_path, 'r') as f:
+            cfg = yaml.safe_load(f)
+        return cfg
+    except FileNotFoundError:
+        print(f"Error: The file {cfg_path} was not found.")
+    except yaml.YAMLError as e:
+        print(f"Error: Failed to parse the YAML file: {e}")
+    return None

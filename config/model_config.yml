@@ -1,0 +1,4 @@
+# TODO: add model configs
+model_name: "resnet18"
+num_classes: 10
+pretrained: True

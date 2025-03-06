@@ -1,0 +1,14 @@
+raw_data_cfg:
+  # 数据路径
+  raw_data_dir: "data/raw/"
+
+  # 配合 Noraxon 导出数据格式：跳过第 1，2 行，读入第 3 行作为表头，跳过第 2，3 列，设置第 3 列的数据类型为字符串
+  skiprows: 3
+  skipcols: [1, 2]
+  header: 3
+  dtype: {2: str}
+
+processed_data_dir: "data/processed/"
+# TODO: add more data configs
+batch_size: 32
+shuffle: True

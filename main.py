@@ -7,18 +7,24 @@
 
 @description: Main script for the project
 """
+
 import os
 import numpy as np
+
 # import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from src.data_processing.read_data import read_data
 from src.data_processing.pre_process import PreProcessor
 from src.data_processing.pre_process import segment
 from src.utils.plot_signal import SignalPlotter
-from src.feature_engineering.features_extraction import HandCraftedFeaturesExtractor
+from src.feature_engineering.features_extraction import (
+    HandCraftedFeaturesExtractor,
+)
 from src.feature_engineering.basic_param import TremorParamExtractor
-from src.modeling.unsupervised.cluster import Clustering
+
+# from src.modeling.unsupervised.cluster import Clustering
+
 # from src.modeling.model_training import train_model
 # from src.modeling.model_validation import cross_validate_model
 from src.utils.load_config import load_json_config
@@ -73,10 +79,10 @@ MODEL_PARAMS = config['model']['params']
 # print(segmented_emg[0].shape)
 # print(feature_mat.shape)
 
-MODE = 'TIME_PLOT'
+MODE = 'HI'
 
 # 定义病人编号、动作标签和疗前疗后标签
-patient_ids = range(2, 4)	# range(1, 7)
+patient_ids = range(2, 4)  # range(1, 7)
 treatment_labels = ['pre', 'post']
 # action_labels = ['sit', 'motion1', 'motion2', 'motion3', 'motion4', 'gait']
 action_labels = ['sit', 'motion', 'gait']
@@ -85,109 +91,155 @@ action_labels = ['sit', 'motion', 'gait']
 all_flattened_features = []
 
 # 用于存储所有已分割数据的向量
-all_segmented_emg = []	#TODO: 将这部分特征提取的代码移入 Clustering 类中，外部最多保留分段采样的代码
+all_segmented_emg = (
+    []
+)  # TODO: 将这部分特征提取的代码移入 Clustering 类中，外部最多保留分段采样的代码
 
 # 按患者-动作-疗前疗后的顺序，遍历所有需要的数据文件
 for patient_id in patient_ids:
-	for treatment_label in treatment_labels:
-		for action_label in action_labels:
-			# 匹配文件名
-			file_name = f"{patient_id}-{treatment_label}-{action_label}.csv"
-			file_path = os.path.join(RAW_DATA_PATH, '20250204', file_name)
+    for treatment_label in treatment_labels:
+        for action_label in action_labels:
+            # 匹配文件名
+            file_name = f"{patient_id}-{treatment_label}-{action_label}.csv"
+            file_path = os.path.join(RAW_DATA_PATH, '20250204', file_name)
 
-			try:
-				# read raw data and pre-process
-				raw_data = read_data(file_path)
-				processed_emg = PreProcessor(raw_data, DATA_CONFIG).filter_emg()
-				if MODE == 'EXTRACT_FEATURES':
-					# segment the EMG data
-					# segmented_emg = processed_emg.segment_emg()
-					
-					# 分段采样，自此列表中的数据按患者-动作-疗前疗后-分段采样的顺序排列
-					sampled_emg = processed_emg.sample_emg()
-					for i in range(len(sampled_emg)):
-						segmented_emg = segment(sampled_emg[i])
-						all_segmented_emg.append(segmented_emg)
+            try:
+                # read raw data and pre-process
+                raw_data = read_data(file_path)
+                processed_emg = PreProcessor(raw_data, DATA_CONFIG).filter_emg()
+                if MODE == 'EXTRACT_FEATURES':
+                    # segment the EMG data
+                    # segmented_emg = processed_emg.segment_emg()
 
-						# extract features
-						feature_lst_0 = []
-						for i in range(segmented_emg[0].shape[1]):
-							feature_lst_1 = []
-							for j in range(len(segmented_emg)):
-								fe = HandCraftedFeaturesExtractor(segmented_emg[j][:, i])
-								feature_vec = fe.extractFeatures(FEATURES_CONFIG)
-								feature_lst_1.append(feature_vec)
+                    # 分段采样，自此列表中的数据按患者-动作-疗前疗后-分段采样的顺序排列
+                    sampled_emg = processed_emg.sample_emg()
+                    for i in range(len(sampled_emg)):
+                        segmented_emg = segment(sampled_emg[i])
+                        all_segmented_emg.append(segmented_emg)
 
-							feature_mat_0 = np.stack(feature_lst_1, axis=0)
-							feature_lst_0.append(feature_mat_0)
+                        # extract features
+                        feature_lst_0 = []
+                        for i in range(segmented_emg[0].shape[1]):
+                            feature_lst_1 = []
+                            for j in range(len(segmented_emg)):
+                                fe = HandCraftedFeaturesExtractor(
+                                    segmented_emg[j][:, i]
+                                )
+                                feature_vec = fe.extractFeatures(
+                                    FEATURES_CONFIG
+                                )
+                                feature_lst_1.append(feature_vec)
 
-						feature_mat = np.stack(feature_lst_0, axis=0)  # 形成形状为 (n_channels, n_segments, n_features) 的特征矩阵
-						flattened_features = feature_mat.flatten()  # 展平特征矩阵
+                            feature_mat_0 = np.stack(feature_lst_1, axis=0)
+                            feature_lst_0.append(feature_mat_0)
 
-						# 将展平的特征矩阵添加到列表中
-						all_flattened_features.append(flattened_features)
+                        feature_mat = np.stack(
+                            feature_lst_0, axis=0
+                        )  # 形成形状为 (n_channels, n_segments, n_features) 的特征矩阵
+                        flattened_features = (
+                            feature_mat.flatten()
+                        )  # 展平特征矩阵
 
-				elif MODE == 'TIME_PLOT':
-					# plot the time figure
-					path = os.path.join(TEST_FIG_PATH, f"{patient_id}_{treatment_label}_{action_label}_time.png")
-					SignalPlotter(processed_emg, start=0, end=10).plot_time_domain(fig_path=path)
-					
-				elif MODE == 'FREQ_PLOT':
-					# plot the frequency figure
-					path = os.path.join(TEST_FIG_PATH, f"{patient_id}_{treatment_label}_{action_label}_freq.png")
-					SignalPlotter(processed_emg, start=0, end=10).plot_freq_domain(fig_path=path)
+                        # 将展平的特征矩阵添加到列表中
+                        all_flattened_features.append(flattened_features)
 
-				elif MODE == 'PSD_PLOT':
-					# plot the PSD figure
-					path = os.path.join(TEST_FIG_PATH, f"{patient_id}_{treatment_label}_{action_label}_psd.png")
-					TremorParamExtractor(processed_emg).plotPsd(fig_path=path)
+                elif MODE == 'TIME_PLOT':
+                    # plot the time figure
+                    path = os.path.join(
+                        TEST_FIG_PATH,
+                        f"{patient_id}_{treatment_label}_{action_label}_time.png",
+                    )
+                    SignalPlotter(
+                        processed_emg, start=0, end=10
+                    ).plot_time_domain(fig_path=path)
 
-				elif MODE == 'PSD_FREQ':
-					# get the tremor frequency
-					tremor_freq = TremorParamExtractor(processed_emg).getTremorFreq()
-					print(tremor_freq)
+                elif MODE == 'FREQ_PLOT':
+                    # plot the frequency figure
+                    path = os.path.join(
+                        TEST_FIG_PATH,
+                        f"{patient_id}_{treatment_label}_{action_label}_freq.png",
+                    )
+                    SignalPlotter(
+                        processed_emg, start=0, end=10
+                    ).plot_freq_domain(fig_path=path)
 
-				elif MODE == 'ENV_TIME_PLOT':
-					# plot the envelope figure in time domain
-					path = os.path.join(TEST_FIG_PATH, f"{patient_id}_{treatment_label}_{action_label}_env_time.png")
-					env = TremorParamExtractor(processed_emg).getEnvelope()
-					SignalPlotter(env, start=0, end=10).plot_time_domain(fig_path=path)
+                elif MODE == 'PSD_PLOT':
+                    # plot the PSD figure
+                    path = os.path.join(
+                        TEST_FIG_PATH,
+                        f"{patient_id}_{treatment_label}_{action_label}_psd.png",
+                    )
+                    TremorParamExtractor(processed_emg).plotPsd(fig_path=path)
 
-				elif MODE == 'ENV_FREQ_PLOT':
-					# plot the envelope figure in frequency domain
-					path = os.path.join(TEST_FIG_PATH, f"{patient_id}_{treatment_label}_{action_label}_env_freq.png")
-					env = TremorParamExtractor(processed_emg).getEnvelope()
-					SignalPlotter(env, start=0, end=10).plot_freq_domain(fig_path=path)
+                elif MODE == 'PSD_FREQ':
+                    # get the tremor frequency
+                    tremor_freq = TremorParamExtractor(
+                        processed_emg
+                    ).getTremorFreq()
+                    print(tremor_freq)
 
-				elif MODE == 'ENV_PSD_FREQ':
-					# get the envelope frequency
-					env = TremorParamExtractor(processed_emg).getEnvelope()
-					env_psd_freq = TremorParamExtractor(env).getTremorFreq()
-					print(f"{patient_id}-{treatment_label}-{action_label} envelope psd frequency:\n", env_psd_freq)
+                elif MODE == 'ENV_TIME_PLOT':
+                    # plot the envelope figure in time domain
+                    path = os.path.join(
+                        TEST_FIG_PATH,
+                        f"{patient_id}_{treatment_label}_{action_label}_env_time.png",
+                    )
+                    env = TremorParamExtractor(processed_emg).getEnvelope()
+                    SignalPlotter(env, start=0, end=10).plot_time_domain(
+                        fig_path=path
+                    )
 
-				elif MODE == 'POWER_RATIO':
-					# get the envelope frequency
-					env = TremorParamExtractor(processed_emg).getEnvelope()
-					env_psd_freq = TremorParamExtractor(env).getTremorFreq()
+                elif MODE == 'ENV_FREQ_PLOT':
+                    # plot the envelope figure in frequency domain
+                    path = os.path.join(
+                        TEST_FIG_PATH,
+                        f"{patient_id}_{treatment_label}_{action_label}_env_freq.png",
+                    )
+                    env = TremorParamExtractor(processed_emg).getEnvelope()
+                    SignalPlotter(env, start=0, end=10).plot_freq_domain(
+                        fig_path=path
+                    )
 
-					# get the power ratio
-					power_ratio = TremorParamExtractor(processed_emg).getPowerRatio(env_psd_freq=env_psd_freq)
-					print(f"{patient_id}-{treatment_label}-{action_label} power ratio:\n", power_ratio)
+                elif MODE == 'ENV_PSD_FREQ':
+                    # get the envelope frequency
+                    env = TremorParamExtractor(processed_emg).getEnvelope()
+                    env_psd_freq = TremorParamExtractor(env).getTremorFreq()
+                    print(
+                        f"{patient_id}-{treatment_label}-{action_label} envelope psd frequency:\n",
+                        env_psd_freq,
+                    )
 
-				elif MODE == 'HALF_PEAK_BANDWIDTH':
-					# get the envelope frequency
-					env = TremorParamExtractor(processed_emg).getEnvelope()
+                elif MODE == 'POWER_RATIO':
+                    # get the envelope frequency
+                    env = TremorParamExtractor(processed_emg).getEnvelope()
+                    env_psd_freq = TremorParamExtractor(env).getTremorFreq()
 
-					# get the half peak bandwidth
-					hfb = TremorParamExtractor(env).getHalfPeakBandwidth()
-					print(f"{patient_id}-{treatment_label}-{action_label} half peak bandwidth:\n", hfb)
+                    # get the power ratio
+                    power_ratio = TremorParamExtractor(
+                        processed_emg
+                    ).getPowerRatio(env_psd_freq=env_psd_freq)
+                    print(
+                        f"{patient_id}-{treatment_label}-{action_label} power ratio:\n",
+                        power_ratio,
+                    )
 
-				else:
-					raise ValueError(f"Invalid mode: {MODE}")
+                elif MODE == 'HALF_PEAK_BANDWIDTH':
+                    # get the envelope frequency
+                    env = TremorParamExtractor(processed_emg).getEnvelope()
 
-			# 如果没有对应文件，则跳过
-			except FileNotFoundError:
-				print(f"文件 {file_path} 未找到，跳过该文件。")
+                    # get the half peak bandwidth
+                    hfb = TremorParamExtractor(env).getHalfPeakBandwidth()
+                    print(
+                        f"{patient_id}-{treatment_label}-{action_label} half peak bandwidth:\n",
+                        hfb,
+                    )
+
+                else:
+                    raise ValueError(f"Invalid mode: {MODE}")
+
+            # 如果没有对应文件，则跳过
+            except FileNotFoundError:
+                print(f"文件 {file_path} 未找到，跳过该文件。")
 
 # fs = 2000
 
