@@ -7,19 +7,10 @@
 
 @description: A helper class for hand-crafted feature extraction
 """
-
 import numpy as np
 # import pandas as pd
 
 from scipy import stats
-# import sampen
-# import math
-
-# import sys
-
-from src.data_processing.read_data import read_data
-from src.data_processing.pre_process import PreProcessor
-from src.utils.load_config import load_json_config
 
 
 class HandCraftedFeaturesExtractor:
@@ -34,16 +25,15 @@ class HandCraftedFeaturesExtractor:
 		Extract hand-crafted features from the input data
 		"""
 		features = []
-		for c in range(len(self.vec)):
-			for feature_name, params in features_config.items():
-				if hasattr(self, feature_name):
-					method = getattr(self, feature_name)
-					if params:
-						feature_value = method(c, **params)
-					else:
-						feature_value = method(c)
-					features.append(feature_value)
-		return np.array(features).reshape(-1, 1)	# 返回特征列向量
+		for feature_name, params in features_config.items():
+			if hasattr(self, feature_name):
+				method = getattr(self, feature_name)
+				if params:
+					feature_value = method(**params)
+				else:
+					feature_value = method()
+				features.append(feature_value)
+		return np.array(features)
 
 	################################
 	##### Time Domain Features #####
@@ -71,11 +61,12 @@ class HandCraftedFeaturesExtractor:
 		"""
 		zero crossing
 		"""
-		return len(zero_crossings = np.where(
-				  (np.sign(self.vec[1:]) * np.sign(self.vec[:-1]) < 0) &
-				  (np.abs(self.vec[1:]) >= threshold) &
-				  (np.abs(self.vec[:-1]) >= threshold)
-			  )[0])
+		zero_crossings = np.where(
+			(np.sign(self.vec[1:]) * np.sign(self.vec[:-1]) < 0) &
+			(np.abs(self.vec[1:]) >= threshold) &
+			(np.abs(self.vec[:-1]) >= threshold)
+		)[0]
+		return len(zero_crossings)
 	
 	def getVAR(self):
 		"""
@@ -173,32 +164,3 @@ class HandCraftedFeaturesExtractor:
 		autoregression coefficient
 		"""
 		pass
-
-
-if __name__ == "__main__":
-	# load configration
-	config = load_json_config('config.json')
-
-	raw_data_path = config['data']['raw_path']
-	processed_data_path = config['data']['processed_path']
-	data_config = config['data_config']
-	features_config = config['hand_crafted_features']
-
-	# read raw data and pre-process
-	raw_data = read_data(raw_data_path)
-	processed_emg = PreProcessor(raw_data, data_config)
-	filtered_emg = processed_emg.filter_emg()
-	segmented_emg = processed_emg.segment_emg()
-
-	feature_mat = np.zeros((len(segmented_emg) * segmented_emg[0].shape[1], 1))
-
-	# extract features
-	for i in range(len(segmented_emg)):
-		for j in range(segmented_emg[0].shape[1]):
-			fe = HandCraftedFeaturesExtractor(segmented_emg[j][:, i])
-			feature_vec = fe.extractFeatures(features_config)
-			feature_mat[j + i * segmented_emg[0].shape[1]] = feature_vec	# 针对传统机器学习模型，展平特征矩阵
-	
-	feature_mat = feature_mat.reshape(-1, 1)	# 转为列向量
-
-	# 数据标签（评分）

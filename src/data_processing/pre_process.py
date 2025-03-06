@@ -7,14 +7,9 @@
 
 @description: A helper class for semg signal pre-processing
 """
-# import numpy as np
-# import pandas as pd
-
-# from matplotlib import pyplot as plt
+import numpy as np
 from scipy.signal import iirnotch, butter, filtfilt
 
-# from src.data_processing.read_data import read_data
-# from src.utils.load_config import load_json_config
 
 class PreProcessor:
 	"""
@@ -44,7 +39,6 @@ class PreProcessor:
 		"""
 		if self.model['emg'] is None:
 			raise ValueError("EMG data is not loaded")
-			return
 		
 		b_notch, a_notch = iirnotch(notch_freq / (fs / 2), Q)
 		b_butter, a_butter = butter(order, [lowcut / (fs / 2), highcut / (fs / 2)], btype='band')
@@ -61,7 +55,6 @@ class PreProcessor:
 		"""
 		if self.model['acc'] is None:
 			raise ValueError("ACC data is not loaded")
-			return
 
 		b_butter, a_butter = butter(4, highcut / (fs / 2), btype='low')
 		for i in range(self.model['acc'].shape[1]):
@@ -85,7 +78,41 @@ class PreProcessor:
 
 		return segments
 	
+	def sample_emg(self, fs=2000, duration=5, num_samples=6):
+		"""
+		sample the EMG data
+		"""
+		if self.model['emg'] is None:
+			raise ValueError("EMG data is not loaded")
+			return
+		
+		samples = []
+		# 随机采样，其实是不对的，尤其是运动阶段，应该采样信号能量集中的时间段
+		for _ in range(num_samples):
+			start = np.random.randint(0, self.model['emg'].shape[0] - duration * fs)
+			end = start + duration * fs
+			sample = self.model['emg'][start:end, :]
+			samples.append(sample)
+		
+		return samples
 	
+
+def segment(data, window_size=200, overlap=0.5):
+	"""
+	segment the EMG data into windows
+	"""
+	if data is None:
+		raise ValueError("EMG data is not loaded")
+	
+	step_size = int(window_size * (1 - overlap))
+	segments = []
+	for i in range(0, data.shape[0] - window_size + 1, step_size):
+		segment = data[i:i + window_size, :]
+		segments.append(segment)
+
+	return segments
+
+
 # if __name__ == "__main__":
 # 	# load configration
 # 	config = load_json_config('config.json')
