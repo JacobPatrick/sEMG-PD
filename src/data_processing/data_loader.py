@@ -3,9 +3,9 @@
 
 @date: 2025-03-06
 
-@email: jacob_patrick@163.com
+@email: lumivoxflow@gmail.com
 
-@description: A script for data loader
+@description: A script to load and get assigned modal data from raw data
 """
 
 import os, yaml
@@ -28,15 +28,14 @@ def load_config(cfg_path):
         print(f"Error: Failed to parse the YAML file: {e}")
     return None
 
-
-def load_raw_data(file_name, cfg_path='config/data_config.yml'):
+def load_raw_data(file_name):
     """
     load data from csv file
     :param file_path: data file path
     :return: data
     """
     # get config info
-    data_cfg = load_config(cfg_path)
+    data_cfg = load_config('config/data_config.yml')
     data_dir = data_cfg['raw_data_cfg']['raw_data_dir']
     skiprows = data_cfg['raw_data_cfg']['skiprows']
     skipcols = data_cfg['raw_data_cfg']['skipcols']
@@ -56,5 +55,37 @@ def load_raw_data(file_name, cfg_path='config/data_config.yml'):
 
         return data
 
-    except FileNotFoundError as e:
-        print(f"文件 {data_path} 未找到，跳过该文件。")
+    except FileNotFoundError:
+        print(f"File {data_path} not found. Skip this file.")
+
+
+def get_raw_modal_data(data, modal, new=True):
+    """
+    get raw data of assigned modal with time
+    :param data: raw data
+    :param modal: assigned modal
+    :return: raw data of assigned modal with time
+    """
+    # get config info
+    data_cfg = load_config('config/data_config.yml')
+    modal_cols = data_cfg['raw_data_cfg']['data_modal']['new' if new else 'old']
+
+    # get raw data of assigned modal
+    if modal not in ['emg', 'acc', 'gyro', 'mag']:
+        raise ValueError(f"Unknown sensor modality: {modal}. Please choose among 'emg', 'acc', 'gyro', 'mag'.")
+    
+    for data_modal, cols in modal_cols.items():
+        if data_modal == modal:
+            # insert time column
+            cols.insert(0, 0)
+
+            return data[:, cols]
+        
+
+def _test_cfg():
+    data_cfg = load_config('config/data_config.yml')
+    print(data_cfg)
+
+
+if __name__ == '__main__':
+    _test_cfg()

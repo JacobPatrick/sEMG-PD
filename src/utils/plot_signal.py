@@ -49,6 +49,10 @@ class SignalPlotter:
             figsize=(20, self.channel_num * 1.5),
         )
         x = np.arange(self.sample_num) / self.fs
+
+        if self.end > self.signal.shape[0]:
+            self.end = self.signal.shape[0]
+
         for i in range(self.channel_num):
             axes[i, 0].plot(
                 x[self.start : self.end], self.signal[self.start : self.end, i]

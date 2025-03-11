@@ -15,9 +15,3 @@ from sklearn.svm import SVR
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-
-from src.data_processing.read_data import readData
-from src.data_processing.pre_process import preProcessor
-from src.feature_engineering.features_extraction import (
-    handCraftedFeaturesExtractor,
-)

@@ -6,6 +6,8 @@
 @email: jacob_patrick@163.com
 
 @description: A script for reading raw data
+
+deprecated: use data_loader.py instead
 """
 
 # import numpy as np
