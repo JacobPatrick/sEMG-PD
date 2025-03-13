@@ -1,4 +1,0 @@
-# TODO: add more training configs
-learning_rate: 0.001
-epochs: 10
-optimizer: 'Adam'
