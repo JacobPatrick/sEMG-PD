@@ -58,7 +58,7 @@ class FullDataLoader(DataLoader):
 
     def _get_subject_dirs(self, data_dir: str) -> List[str]:
         """获取所有受试者目录路径"""
-        # 假设受试者目录以"sub-"开头
+        # 受试者目录为"sub-{id}"
         return [
             d
             for d in glob.glob(os.path.join(data_dir, "sub-*"))

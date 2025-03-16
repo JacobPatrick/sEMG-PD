@@ -1,5 +1,6 @@
 from typing import Dict, Type, Any
 from src.interfaces.data import DataLoader
+from src.interfaces.preprocess import Preprocessor
 from src.interfaces.feature import FeatureExtractor
 
 
@@ -19,6 +20,24 @@ class DataLoaderFactory:
             raise ValueError(f"未知的加载器类型: {name}")
 
         return self._loaders[name](**kwargs)
+
+
+class PreprocessorFactory:
+    """预处理器工厂类"""
+    
+    def __init__(self):
+        self._preprocessors: Dict[str, Type[Preprocessor]] = {}
+    
+    def register(self, name: str, preprocessor_class: Type[Preprocessor]) -> None:
+        """注册预处理器类"""
+        self._preprocessors[name] = preprocessor_class
+    
+    def create(self, name: str, **kwargs) -> Preprocessor:
+        """创建预处理器实例"""
+        if name not in self._preprocessors:
+            raise ValueError(f"未知的预处理器类型: {name}")
+        
+        return self._preprocessors[name](**kwargs)
 
 
 class FeatureExtractorFactory:

@@ -13,6 +13,7 @@ from src.pipeline.feature.manual_feature_extractor import ManualFeatureExtractor
 from src.pipeline.feature.deep_learning_feature_extractor import (
     DeepLearningFeatureExtractor,
 )
+from src.pipeline.preprocess.pass_through_preprocessor import PassThroughPreprocessor
 
 # 其他导入...
 
@@ -24,6 +25,10 @@ def setup_factories():
     data_loader_factory.register("full_loader", FullDataLoader)
     data_loader_factory.register("lazy_loader", LazyDataLoader)
     data_loader_factory.register("batch_loader", BatchDataLoader)
+
+    # 预处理器工厂
+    preprocessor_factory = PreprocessorFactory()
+    preprocessor_factory.register("pass_through", PassThroughPreprocessor)  # 暂时不做任何预处理
 
     # 特征提取器工厂
     feature_factory = FeatureExtractorFactory()

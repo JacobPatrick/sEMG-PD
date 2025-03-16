@@ -18,7 +18,7 @@ data:
     batch_size: 2
 
 # 处理策略配置
-preprocessor: "standard_scaler"
+preprocessor: "pass_through"
 feature_extractor: "deep_learning"  # 可替换为 "manual"
 model_trainer: "random_forest"      # 可替换为 "svm", "neural_network"等
 model_validator: "cross_validation"

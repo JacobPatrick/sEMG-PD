@@ -1,7 +1,7 @@
-from src.interfaces.data import DataLoader
-import pandas as pd
 import os
+import pandas as pd
 from typing import Dict, Any, List, Generator
+from src.interfaces.data import DataLoader
 
 
 # TODO: to be implemented
