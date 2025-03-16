@@ -2,4 +2,5 @@ raw
 logs
 model
 reports
+tests/test_data/
 __pycache__

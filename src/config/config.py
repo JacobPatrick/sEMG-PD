@@ -136,7 +136,6 @@ class ConfigFactory:
         return config
 
 
-# 使用示例
 def load_config(config_type: str, yaml_path: str) -> ConfigBase:
     """加载配置的便捷函数"""
     return ConfigFactory.create_config(config_type, yaml_path)
@@ -144,4 +143,5 @@ def load_config(config_type: str, yaml_path: str) -> ConfigBase:
 
 if __name__ == "__main__":
     data_config = load_config('data', 'src/config/data_config/new_raw.yaml')
-    print(data_config)
+    header = data_config.header
+    print(header)
