@@ -1,4 +1,3 @@
-import pytest
 import os
 import pandas as pd
 from src.pipeline.data.full_data_loader import FullDataLoader
@@ -24,7 +23,7 @@ class TestFullDataLoader:
         assert os.path.basename(dirs[0]) in ["sub-1", "sub-2"]
         assert os.path.basename(dirs[1]) in ["sub-1", "sub-2"]
 
-    def test_load_subject_data(self, mock_config, mock_timeseries_data):
+    def test_load_subject_data(self, mock_config):
         """测试加载单个受试者数据"""
         loader = FullDataLoader()
 
@@ -72,7 +71,7 @@ class TestFullDataLoader:
         assert "sub-1" in data["raw"]
         assert "sub-2" in data["labels"]
 
-    def test_missing_labels_file(self, mock_config, caplog):
+    def test_missing_labels_file(self, mock_config):
         """测试标签文件缺失情况"""
         # 修改配置，指向不存在的文件
         mock_config.labels_file = "non_existent_file.csv"
@@ -85,7 +84,7 @@ class TestFullDataLoader:
         # 标签字典应该为空
         assert data["labels"] == {}
 
-    def test_custom_config_parameters(self, mock_config, mock_timeseries_data):
+    def test_custom_config_parameters(self):
         """测试自定义配置参数"""
 
         # 创建一个具有最小配置的对象

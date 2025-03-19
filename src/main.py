@@ -48,17 +48,15 @@ def setup_factories():
 
 def main():
     # 加载配置
-    config = load_config(
-        "exp_config", "src/config/data_config/experiment1.yaml"
-    )
-
+    config = load_config("experiment", "src/config/data_config/experiment1.yaml")
+    
     # 设置工厂
     factories = setup_factories()
-
+    
     # 创建流水线
     pipeline = StandardMLPipeline(**factories)
-
-    # 运行流水线
+    
+    # 运行流水线，传入完整配置
     results = pipeline.run(config)
 
     # 处理结果

@@ -1,0 +1,45 @@
+{
+    "features": {
+        "sub-1": {  # 受试者ID
+            "sit": {  # 实验类型
+                "windows": {  # 所有时间窗口的特征
+                    "window_0": {  # 窗口ID (0, 1, 2, ...)
+                        "channel_1": {  # 通道1的特征
+                            "mean": float,
+                            "std": float,
+                            "mav": float,
+                            # ... 其他特征
+                        },
+                        "channel_2": {
+                            # 同上
+                        },
+                        # ... 其他通道
+                    },
+                    "window_1": {
+                        # 同上
+                    },
+                    # ... 其他窗口
+                },
+                "metadata": {  # 元数据
+                    "window_size": 0.2,  # 窗口大小(秒)
+                    "overlap": 0.1,      # 重叠大小(秒)
+                    "sampling_rate": 2000,# 采样率
+                    "n_channels": 8,      # 通道数
+                    "n_windows": int,     # 窗口总数
+                    "n_features": 20,     # 每个通道的特征数
+                }
+            },
+            "motion1": {
+                # 同上
+            },
+            # ... 其他实验
+        },
+        "sub-2": {
+            # 同上
+        },
+        # ... 其他受试者
+    },
+    "labels": {
+        # 从数据加载器传递的标签数据
+    }
+}

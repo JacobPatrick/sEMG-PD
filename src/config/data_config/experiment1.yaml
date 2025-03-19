@@ -1,30 +1,23 @@
-# 实验配置
-experiment_name: "实验1"
-output_dir: "./experiments/exp1"
-
-# 数据配置
-data_loader: "full_loader"
-data_dir: "raw"
-labels_file: "raw/labels.csv" 
-
-# 数据加载器配置
+# 数据加载配置
 data:
-  data_loader: "lazy_loader"  # 或 "batch_loader"
-  data_dir: "raw/subjects"
-  metadata_path: "raw/metadata.csv"
-  channels: ["channel1", "channel2", ...]  # 需要的通道
-  sampling_rate: 1000  # Hz
-  batch_loader_params:
-    batch_size: 2
+  data_loader: "full_loader"
 
-# 处理策略配置
-preprocessor: "pass_through"
-feature_extractor: "deep_learning"  # 可替换为 "manual"
-model_trainer: "random_forest"      # 可替换为 "svm", "neural_network"等
-model_validator: "cross_validation"
+# 预处理配置
+preprocess:
+  preprocess_type: "pass_through"
 
-# 模型参数
-model_params:
-  n_estimators: 100
-  max_depth: 10
-  # 其他参数... 
+# 特征提取配置
+feature:
+  feature_extractor: "manual"
+  window_size: 0.2
+  overlap: 0.1
+  sampling_rate: 2000
+  features: ["mav", "rms", "zc", "mnf", "mdf", "ar"]
+
+# 模型训练配置
+train:
+  model_type: "svm"
+
+# 模型验证配置
+validate:
+  validator_type: "cross_validation"

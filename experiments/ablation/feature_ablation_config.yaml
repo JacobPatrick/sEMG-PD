@@ -1,0 +1,16 @@
+# 作为示例
+feature_sets:
+  time_domain_only:
+    channels: ["channel_1", "channel_2", "channel_3"]
+    features: ["mean", "std", "mav", "rms"]
+    experiments: ["sit", "motion1"]
+    
+  frequency_domain_only:
+    channels: ["channel_1", "channel_2", "channel_3"]
+    features: ["mnf", "mdf", "pkf"]
+    experiments: ["sit", "motion1"]
+    
+  combined_features:
+    channels: ["channel_1", "channel_2", "channel_3"]
+    features: ["mean", "std", "mav", "mnf", "mdf"]
+    experiments: ["sit", "motion1"]
