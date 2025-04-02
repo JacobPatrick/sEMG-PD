@@ -55,7 +55,7 @@ class TestFeatureExtractorPipeline:
             preprocessor_factory=mock_preprocessor_factory,
             feature_extractor_factory=factory,
             model_trainer_factory=mock_model_factory,
-            model_validator_factory=mock_validator_factory, 
+            model_validator_factory=mock_validator_factory,
         )
 
         features = pipeline.extract_features({}, mock_config)

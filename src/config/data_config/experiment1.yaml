@@ -1,5 +1,7 @@
 # 数据加载配置
 data:
+  data_dir: "raw/"
+  labels_file: "labels.csv"
   data_loader: "full_loader"
 
 # 预处理配置
@@ -14,10 +16,15 @@ feature:
   sampling_rate: 2000
   features: ["mav", "rms", "zc", "mnf", "mdf", "ar"]
 
+# TODO: 数据集分割配置
+split:
+  split_type: "train_val_test_split"
+
 # 模型训练配置
 train:
   model_type: "svm"
 
-# 模型验证配置
-validate:
-  validator_type: "cross_validation"
+# 结果输出配置
+output:
+  model_dir: "model"
+  report_dir: "reports"

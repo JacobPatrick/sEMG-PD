@@ -96,10 +96,13 @@ def mock_config(test_data_dir, mock_timeseries_data, mock_labels_data):
         data_loader="full_loader",
     )
 
+
 @pytest.fixture(scope="session")
 def mock_experiment_config():
     """创建模拟的实验配置"""
-    config = load_config("experiment", "src/config/data_config/experiment1.yaml")
+    config = load_config(
+        "experiment", "src/config/data_config/experiment1.yaml"
+    )
     return config
 
 
@@ -109,7 +112,8 @@ def mock_preprocessed_data():
     # 创建时间序列
     t = np.arange(0, 10, 0.0005)  # 10s，2000Hz
     # 创建数据帧
-    df = pd.DataFrame({
+    df = pd.DataFrame(
+        {
             'time': t,
             'channel1': np.sin(2 * np.pi * 10 * t),  # 10Hz正弦波
             'channel2': np.random.randn(20000),  # 随机噪声
@@ -119,19 +123,15 @@ def mock_preprocessed_data():
             'channel6': np.random.randn(20000),
             'channel7': np.random.randn(20000),
             'channel8': np.random.randn(20000),
-        }).reset_index(drop=True)  # 确保索引是正常的数字索引
-    
+        }
+    ).reset_index(
+        drop=True
+    )  # 确保索引是正常的数字索引
+
     # 打印列名以便调试
     print("DataFrame columns:", df.columns.tolist())
-    
-    return {
-        "raw": {
-            "sub-1": {
-                "sit": df
-            }
-        },
-        "labels": {...}
-    }
+
+    return {"raw": {"sub-1": {"sit": df}}, "labels": {...}}
 
 
 @pytest.fixture(scope="session")
@@ -141,18 +141,9 @@ def mock_feature_data():
         "features": {
             "sub-1": {
                 "sit": {
-                    "windows": {
-                        "window_0": {
-                            "channel1": {
-                                "mav": 0.5,
-                                "rms": 0.7,
-                                "zc": 10
-                            }
-                        }
-                    },
-                    "metadata": {...}
+                    "window_0": {"channel1": {"mav": 0.5, "rms": 0.7, "zc": 10}}
                 }
             }
         },
-        "labels": {...}
+        "labels": {...},
     }

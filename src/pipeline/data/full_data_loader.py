@@ -51,7 +51,7 @@ class FullDataLoader(DataLoader):
             if hasattr(config, "labels_file")
             else os.path.join(data_dir, "labels.csv")
         )
-        labels_data = self._load_labels(labels_file)
+        labels_data = self._load_labels(data_dir, labels_file)
 
         # 返回完整数据字典
         return {"raw": raw_data, "labels": labels_data}
@@ -86,18 +86,20 @@ class FullDataLoader(DataLoader):
 
         for csv_file in csv_files:
             experiment_name = os.path.splitext(os.path.basename(csv_file))[0]
-            df = pd.read_csv(csv_file)
-            subject_data[experiment_name] = df
+            df = pd.read_csv(csv_file, encoding="utf-8")
+            subject_data[experiment_name] = df.iloc[:10000, :]
 
         return subject_data
 
-    def _load_labels(self, labels_file: str) -> Dict[str, Dict]:
+    def _load_labels(self, data_dir: str, labels_file: str) -> Dict[str, Dict]:
         """加载标签数据"""
-        if not os.path.exists(labels_file):
+        if not os.path.exists(os.path.join(data_dir, labels_file)):
             print(f"警告: 标签文件 {labels_file} 不存在")
             return {}
 
-        labels_df = pd.read_csv(labels_file)
+        labels_df = pd.read_csv(
+            os.path.join(data_dir, labels_file), encoding="utf-8"
+        )
         labels_data = {}
 
         for _, row in labels_df.iterrows():

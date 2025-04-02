@@ -1,7 +1,9 @@
 import pytest
 from src.core.factories import FeatureExtractorFactory
 from src.pipeline.feature.manual_feature_extractor import ManualFeatureExtractor
-from src.pipeline.feature.deep_learning_feature_extractor import DeepLearningFeatureExtractor
+from src.pipeline.feature.deep_learning_feature_extractor import (
+    DeepLearningFeatureExtractor,
+)
 
 
 class TestFeatureExtractorFactory:
@@ -28,10 +30,9 @@ class TestFeatureExtractorFactory:
     def test_create_with_params(self):
         """测试带参数创建特征提取器"""
         raise NotImplementedError
-    
+
     def test_unknown_extractor(self):
         """测试请求未知特征提取器"""
         factory = FeatureExtractorFactory()
         with pytest.raises(ValueError):
             factory.create("unknown_extractor")
-            
