@@ -2,14 +2,13 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple, Any
 from src.utils.save_model import save_model
 
-from config.config import (
+from src.config.config import (
     ExperimentConfig,
     DataConfig,
     PreprocessConfig,
     FeatureConfig,
     SplitConfig,
     TrainConfig,
-    ValidateConfig,
     OutputConfig,
 )
 
@@ -42,17 +41,17 @@ class MLPipeline(ABC):
         splitted_data = self.split_data(features, config.split)
         cv_results = []
         for split in splitted_data["cv_splits"]:
-            model = self.train_model(split["train"], config.train)
-            results = self.validate_model(model, split["val"], config.validate)
+            models = self.train_model(split["train"], config.train)
+            results = self.validate_model(models, split["val"], config.train)
             cv_results.append(results)
-        final_model = self.train_model(splitted_data["test"], config.train)
+        final_models = self.train_model(splitted_data["train"], config.train)
         test_results = self.validate_model(
-            final_model, splitted_data["test"], config.train
+            final_models, splitted_data["test"], config.train
         )
         results = dict(
             cv_results=cv_results,
             test_results=test_results,
-            final_model=final_model,
+            final_models=final_models,
         )
         self.save_results(results, config.output)
         return results
@@ -88,7 +87,7 @@ class MLPipeline(ABC):
 
     @abstractmethod
     def validate_model(
-        self, model: Any, features: Any, config: TrainConfig
+        self, models: Any, features: Any, config: TrainConfig
     ) -> Dict[str, Any]:
         """验证模型"""
         pass
@@ -114,7 +113,6 @@ class StandardMLPipeline(MLPipeline):
         feature_extractor_factory,
         data_splitter_factory,
         model_trainer_factory,
-        # model_validator_factory,
     ):
         """初始化流水线
 
@@ -124,14 +122,12 @@ class StandardMLPipeline(MLPipeline):
             feature_extractor_factory: 特征提取器工厂
             data_splitter_factory: 数据分割器工厂
             model_trainer_factory: 模型训练器工厂
-            model_validator_factory: 模型验证器工厂
         """
         self.data_loader_factory = data_loader_factory
         self.preprocessor_factory = preprocessor_factory
         self.feature_extractor_factory = feature_extractor_factory
         self.data_splitter_factory = data_splitter_factory
         self.model_trainer_factory = model_trainer_factory
-        # self.model_validator_factory = model_validator_factory
 
     def load_data(self, config: DataConfig) -> Dict[str, Any]:
         """加载数据"""
@@ -170,11 +166,11 @@ class StandardMLPipeline(MLPipeline):
         return trainer.fit(features)
 
     def validate_model(
-        self, model: Any, features: Any, config: TrainConfig
-    ) -> Dict[str, Any]:
+        self, models: Any, features: Any, config: TrainConfig
+    ) -> Any:
         """模型验证"""
         trainer_type = config.model_type
-        trainer = self.model_trainer_factory.create(trainer_type)
+        trainer = self.model_trainer_factory.create(trainer_type, models=models)
         return trainer.predict(features)
 
     def save_results(
@@ -183,7 +179,7 @@ class StandardMLPipeline(MLPipeline):
         """保存结果"""
 
         # 保存在测试集上训练得到的模型
-        model = results["final_model"]
+        model = results["final_models"]
         save_model(model, config.model_dir, "test.joblib")
 
         # 保存交叉验证结果

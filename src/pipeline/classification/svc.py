@@ -7,8 +7,8 @@ from src.interfaces.classification import Classification
 class SVM(Classification):
     """SVM分类模型实现"""
 
-    def __init__(self):
-        self.models = []  # 每个输出维度对应一个SVC模型
+    def __init__(self, models=[]):
+        self.models = models  # 每个输出维度对应一个SVC模型
 
     def fit(self, data: Tuple) -> List[SVC]:
         """训练模型
@@ -40,16 +40,28 @@ class SVM(Classification):
         Returns:
             predictions: shape (n_samples, n_dimensions) 的预测结果
         """
-        X, _ = data
+        X, y = data
         predictions = []
+        confusion_matrices = []
 
-        # 使用每个模型预测对应维度的输出
+        # 使用每个模型预测对应维度的输出，并计算混淆矩阵
         for model in self.models:
             pred = model.predict(X)
             predictions.append(pred)
 
+            # 计算混淆矩阵
+            confusion_matrix = np.zeros((5, 5))
+            for true_label, pred_label in zip(y, pred):
+                confusion_matrix[true_label, pred_label] += 1
+            
+            confusion_matrices.append(confusion_matrix)
+
+        # 计算平均混淆矩阵
+        average_confusion_matrix = np.mean(confusion_matrices, axis=0)
+
         # 将各维度的预测结果组合
-        return np.column_stack(predictions)
+        # return np.column_stack(predictions)
+        return average_confusion_matrix
 
 
 class FixedOutputSVC(SVC):

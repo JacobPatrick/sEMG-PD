@@ -9,6 +9,7 @@ class DataConfig:
 
     data_dir: str = "raw/"
     labels_file: str = "labels.csv"
+    data_range: Optional[List[int]] = None  # 可选的数据集范围
     data_loader: str = "full_loader"  # 默认全量加载
 
 

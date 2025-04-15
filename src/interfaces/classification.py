@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Tuple, List, Any
+from typing import Tuple, List, Any
 
 
 class Classification(ABC):
     """回归模型接口"""
 
     @abstractmethod
-    def __init__(self) -> None:
+    def __init__(self, models) -> None:
         """初始化模型"""
         pass
 

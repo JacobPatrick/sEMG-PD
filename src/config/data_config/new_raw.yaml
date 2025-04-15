@@ -1,8 +1,0 @@
-raw_data_dir: 'raw/'
-
-# 适应 Noraxon 导出的文件格式
-skiprows: 2
-skipcols: [2, 3]
-header: 3
-dtype: {2: 'str'}
-sensor_config: ['emg', 'imu', 'emg', 'emg', 'imu', 'emg', 'emg', 'imu', 'emg', 'emg', 'imu', 'emg']

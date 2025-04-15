@@ -1,8 +1,8 @@
 import pytest
 from src.core.factories import FeatureExtractorFactory
 from src.pipeline.feature.manual_feature_extractor import ManualFeatureExtractor
-from src.pipeline.feature.deep_learning_feature_extractor import (
-    DeepLearningFeatureExtractor,
+from src.pipeline.feature.cnn_lstm_feature_extractor import (
+    CnnLstmFeatureExtractor,
 )
 
 
@@ -13,7 +13,7 @@ class TestFeatureExtractorFactory:
         """测试工厂注册功能"""
         factory = FeatureExtractorFactory()
         factory.register("manual", ManualFeatureExtractor)
-        factory.register("deep_learning", DeepLearningFeatureExtractor)
+        factory.register("deep_learning", CnnLstmFeatureExtractor)
 
         assert len(factory._extractors) == 2
         assert "manual" in factory._extractors

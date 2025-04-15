@@ -5,7 +5,7 @@ import numpy as np
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 from sklearn.model_selection import train_test_split, KFold
-from config.config import ExperimentConfig
+from src.config.config import ExperimentConfig
 
 
 @dataclass

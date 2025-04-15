@@ -2,7 +2,7 @@ from src.interfaces.data import DataLoader
 import pandas as pd
 import os
 import glob
-from typing import Dict, Any, List
+from typing import Dict, Tuple, List, Any
 
 
 class FullDataLoader(DataLoader):
@@ -43,7 +43,7 @@ class FullDataLoader(DataLoader):
         subject_dirs = self._get_subject_dirs(data_dir)
 
         # 加载所有受试者的实验数据
-        raw_data = self._load_all_subjects_data(subject_dirs)
+        raw_data = self._load_all_subjects_data(subject_dirs, config.data_range)
 
         # 加载标签数据
         labels_file = (
@@ -66,19 +66,21 @@ class FullDataLoader(DataLoader):
         ]
 
     def _load_all_subjects_data(
-        self, subject_dirs: List[str]
+        self, subject_dirs: List[str], data_range: Tuple | None = None
     ) -> Dict[str, Dict[str, pd.DataFrame]]:
         """加载所有受试者的所有实验数据"""
         all_subjects_data = {}
 
         for subject_dir in subject_dirs:
             subject_id = os.path.basename(subject_dir)
-            subject_data = self._load_subject_data(subject_dir)
+            subject_data = self._load_subject_data(subject_dir, data_range)
             all_subjects_data[subject_id] = subject_data
 
         return all_subjects_data
 
-    def _load_subject_data(self, subject_dir: str) -> Dict[str, pd.DataFrame]:
+    def _load_subject_data(
+        self, subject_dir: str, data_range: Tuple | None
+    ) -> Dict[str, pd.DataFrame]:
         """加载单个受试者的所有实验数据"""
         subject_data = {}
 
@@ -87,7 +89,11 @@ class FullDataLoader(DataLoader):
         for csv_file in csv_files:
             experiment_name = os.path.splitext(os.path.basename(csv_file))[0]
             df = pd.read_csv(csv_file, encoding="utf-8")
-            subject_data[experiment_name] = df.iloc[:10000, :]
+            if data_range:
+                start, end = data_range
+                subject_data[experiment_name] = df.iloc[start:end, :]
+            else:
+                subject_data[experiment_name] = df
 
         return subject_data
 

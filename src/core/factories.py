@@ -3,7 +3,7 @@ from src.interfaces.data import DataLoader
 from src.interfaces.preprocess import Preprocessor
 from src.interfaces.feature import FeatureExtractor
 from src.interfaces.split import Splitter
-from interfaces.classification import Classification
+from src.interfaces.classification import Classification
 
 
 class DataLoaderFactory:
@@ -100,9 +100,3 @@ class ModelTrainerFactory:
             raise ValueError(f"未知的分类模型类型: {name}")
 
         return self._classifications[name](**kwargs)
-
-
-class ModelValidatorFactory:
-    """分类模型验证工厂类"""
-
-    pass

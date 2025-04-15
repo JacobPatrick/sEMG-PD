@@ -13,24 +13,26 @@ from src.core.factories import (
 )
 from src.pipeline.pipeline import StandardMLPipeline
 from src.pipeline.data.full_data_loader import FullDataLoader
-from src.pipeline.data.data_loader import LazyDataLoader, BatchDataLoader
-from src.pipeline.feature.manual_feature_extractor import ManualFeatureExtractor
-from src.pipeline.feature.deep_learning_feature_extractor import (
-    DeepLearningFeatureExtractor,
-)
+
+# from src.pipeline.data.data_loader import LazyDataLoader, BatchDataLoader
 from src.pipeline.preprocess.pass_through_preprocessor import (
     PassThroughPreprocessor,
 )
+from src.pipeline.feature.manual_feature_extractor import ManualFeatureExtractor
+from src.pipeline.feature.cnn_lstm_feature_extractor import (
+    CnnLstmFeatureExtractor,
+)
 from src.pipeline.split.splitter import DataSplitter
 from src.pipeline.classification.svc import SVM
+
 
 # 创建并配置工厂
 def setup_factories():
     # 数据加载器工厂
     data_loader_factory = DataLoaderFactory()
     data_loader_factory.register("full_loader", FullDataLoader)
-    data_loader_factory.register("lazy_loader", LazyDataLoader)
-    data_loader_factory.register("batch_loader", BatchDataLoader)
+    # data_loader_factory.register("lazy_loader", LazyDataLoader)
+    # data_loader_factory.register("batch_loader", BatchDataLoader)
 
     # 预处理器工厂
     preprocessor_factory = PreprocessorFactory()
@@ -41,11 +43,10 @@ def setup_factories():
     # 特征提取器工厂
     feature_factory = FeatureExtractorFactory()
     feature_factory.register("manual", ManualFeatureExtractor)
-    feature_factory.register("deep_learning", DeepLearningFeatureExtractor)
+    feature_factory.register("cnn_lstm", CnnLstmFeatureExtractor)
 
     # 数据分割器工厂
     data_splitter_factory = DataSplitterFactory()
-    # data_splitter_factory.register("train_test_split", TrainTestSplitter)
     data_splitter_factory.register("train_val_test_split", DataSplitter)
 
     # 模型训练工厂
@@ -63,9 +64,7 @@ def setup_factories():
 
 if __name__ == "__main__":
     # 加载配置
-    config = load_config(
-        "experiment", "src/config/data_config/experiment1.yaml"
-    )
+    config = load_config("experiment", "src/config/experiment1.yaml")
 
     # 设置工厂
     factories = setup_factories()

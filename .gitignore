@@ -4,4 +4,6 @@ logs
 model
 reports
 tests/test_data/
+.pytest_cache/
 __pycache__
+zhejiang_hospital*

@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, List, Any
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -141,7 +141,7 @@ class ManualFeatureExtractor(FeatureExtractor):
                         window_data = signals[channel].values[start:end]
                         window_features[channel] = (
                             self._extract_window_features(
-                                window_data, sampling_rate
+                                window_data, sampling_rate, config.features
                             )
                         )
 
@@ -157,7 +157,10 @@ class ManualFeatureExtractor(FeatureExtractor):
         return features_data
 
     def _extract_window_features(
-        self, window_data: np.ndarray, sampling_rate: int
+        self,
+        window_data: np.ndarray,
+        sampling_rate: int,
+        features_list: List[str],
     ) -> Dict[str, float]:
         """提取单个窗口的所有特征"""
         features = {}
@@ -168,14 +171,20 @@ class ManualFeatureExtractor(FeatureExtractor):
 
         # 提取时域特征
         for name, func in self.time_domain_features.items():
+            if features_list and name not in features_list:
+                continue
             features[name] = func()
 
         # 提取频域特征
         for name, func in self.freq_domain_features.items():
+            if features_list and name not in features_list:
+                continue
             features[name] = func()
 
         # 提取基于模型的特征
         # for name, func in self.model_based_features.items():
+        #     if features_list and name not in features_list:
+        #         continue
         #     features[name] = func()
 
         return features

@@ -28,7 +28,7 @@ class DataSplitter(Splitter):
         # 2. 从训练集中划分验证集
         cv_splits = self._get_cv_splits(train_data, n_splits=5)
 
-        return dict(test=test_data, cv_splits=cv_splits)
+        return dict(train=train_data ,test=test_data, cv_splits=cv_splits)
 
     def _get_cv_splits(
         self, data: Tuple, n_splits: int = 5
