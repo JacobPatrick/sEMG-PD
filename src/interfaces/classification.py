@@ -3,7 +3,7 @@ from typing import Tuple, List, Any
 
 
 class Classification(ABC):
-    """回归模型接口"""
+    """分类模型接口"""
 
     @abstractmethod
     def __init__(self, models) -> None:

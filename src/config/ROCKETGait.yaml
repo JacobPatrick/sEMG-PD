@@ -1,0 +1,39 @@
+# 数据加载配置
+data:
+  data_dir: "raw/grad_proj/"
+  labels_file: "labels.csv"
+  data_loader: "full_loader"
+
+# 预处理配置
+preprocess:
+  preprocess_type: "pass_through"
+
+# 无用
+feature:
+  feature_extractor: "manual"
+  # 手工特征相关参数
+  window_size: 0.2
+  overlap: 0.1
+  sampling_rate: 2000
+  features: [
+    "mav", "iemg", "rms", "zc", "var",
+    "ssc", "wamp", "ssi", "kurt", "wl",
+    "tp", "mp", "mnf", "mdf"
+    ]
+
+# 无用
+split:
+  split_type: "train_val_test_split"
+
+# 特征提取配置
+feature:
+  feature_extractor: "minirocket"
+
+# 模型训练配置
+train:
+  model_type: "svm"
+
+# 结果输出配置
+output:
+  model_dir: "model"
+  report_dir: "reports"

@@ -2,6 +2,7 @@ from src.interfaces.data import DataLoader
 import pandas as pd
 import os
 import glob
+import json
 from typing import Dict, Tuple, List, Any
 
 
@@ -30,14 +31,16 @@ class FullDataLoader(DataLoader):
                     ...
                 },
                 "labels": {
-                    "sub-1": {...},
-                    "sub-2": {...},
+                    "sub-1": [...],
+                    "sub-2": [...],
                     ...
                 }
             }
         """
         # 获取数据目录
-        data_dir = config.data_dir if hasattr(config, "data_dir") else "raw"
+        data_dir = (
+            config.data_dir if hasattr(config, "data_dir") else "raw/grad-proj/"
+        )
 
         # 获取所有受试者目录
         subject_dirs = self._get_subject_dirs(data_dir)
@@ -111,5 +114,26 @@ class FullDataLoader(DataLoader):
         for _, row in labels_df.iterrows():
             subject_id = f"sub-{row['ID']}"
             labels_data[subject_id] = row.to_dict()
+            updrs_scores = json.loads(labels_data[subject_id]["UPDRS-III"])
+            labels_data[subject_id] = _dict_values_to_list(updrs_scores)
 
         return labels_data
+
+
+def _dict_values_to_list(data: Dict[str, Any]) -> List[Any]:
+    """将多层字典的值转为按顺序排列的列表"""
+
+    updrs_scores_list = []
+
+    def dict_values_to_list_recursive(data):
+        """递归遍历字典，将所有值依次存入列表"""
+        if not isinstance(data, dict):
+            updrs_scores_list.append(data)
+            return
+
+        for _, value in data.items():
+            dict_values_to_list_recursive(value)
+
+    dict_values_to_list_recursive(data)
+
+    return updrs_scores_list

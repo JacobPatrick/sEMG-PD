@@ -21,17 +21,24 @@ class SVM(Classification):
 
         # 为每个输出维度训练一个SVC模型
         self.models = []
-        for i in range(y.shape[1]):  # 遍历每个输出维度
-            if np.unique(y[:, i]).size < 2:  # 如果标签只有一个类别，则跳过
-                self.models.append(FixedOutputSVC(y[:, i][0]))
-                continue
-            model = SVC(kernel='rbf', C=1.0, gamma=0.1)
-            model.fit(X, y[:, i])
+        try:
+            for i in range(y.shape[1]):  # 遍历每个输出维度
+                if np.unique(y[:, i]).size < 2:  # 如果标签只有一个类别，则跳过
+                    self.models.append(FixedOutputSVC(y[:, i][0]))
+                    continue
+                model = SVC(kernel='rbf', C=0.8, gamma=0.1)
+                model.fit(X, y[:, i])
+                self.models.append(model)
+        except IndexError:
+            if np.unique(y).size < 2:  # 如果标签只有一个类别，则跳过
+                self.models.append(FixedOutputSVC(y[0]))
+            model = SVC(kernel='rbf', C=0.8, gamma=0.1)
+            model.fit(X, y)
             self.models.append(model)
 
         return self.models
 
-    def predict(self, data: Tuple) -> np.ndarray:
+    def predict(self, data: Tuple):
         """预测量表中每个维度的得分
 
         Args:
@@ -42,26 +49,30 @@ class SVM(Classification):
         """
         X, y = data
         predictions = []
-        confusion_matrices = []
+        # confusion_matrices = []
 
-        # 使用每个模型预测对应维度的输出，并计算混淆矩阵
+        # # 使用每个模型预测对应维度的输出，并计算混淆矩阵
+        # for model in self.models:
+        #     pred = model.predict(X)
+        #     predictions.append(pred)
+
+        #     # 计算混淆矩阵
+        #     confusion_matrix = np.zeros((5, 5))
+        #     for true_label, pred_label in zip(y, pred):
+        #         confusion_matrix[true_label, pred_label] += 1
+
+        #     confusion_matrices.append(confusion_matrix)
+
+        # # 计算平均混淆矩阵
+        # average_confusion_matrix = np.mean(confusion_matrices, axis=0)
+
+        # return average_confusion_matrix
+
         for model in self.models:
             pred = model.predict(X)
             predictions.append(pred)
 
-            # 计算混淆矩阵
-            confusion_matrix = np.zeros((5, 5))
-            for true_label, pred_label in zip(y, pred):
-                confusion_matrix[true_label, pred_label] += 1
-            
-            confusion_matrices.append(confusion_matrix)
-
-        # 计算平均混淆矩阵
-        average_confusion_matrix = np.mean(confusion_matrices, axis=0)
-
-        # 将各维度的预测结果组合
-        # return np.column_stack(predictions)
-        return average_confusion_matrix
+        return y, predictions[0]
 
 
 class FixedOutputSVC(SVC):

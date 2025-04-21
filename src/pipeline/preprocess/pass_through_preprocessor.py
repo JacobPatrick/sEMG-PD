@@ -18,27 +18,28 @@ class PassThroughPreprocessor(Preprocessor):
             原始输入数据
         """
         # 调整标签数据格式，提取 UPDRS-III 量表得分并转为列表
-        for subject_id, subject_labels in data["labels"].items():
-            updrs_scores = json.loads(subject_labels["UPDRS-III"])
-            data["labels"][subject_id] = _dict_values_to_list(updrs_scores)
+        # for subject_id, subject_labels in data["labels"].items():
+        #     updrs_scores = json.loads(subject_labels["UPDRS-III"])
+        #     data["labels"][subject_id] = _dict_values_to_list(updrs_scores)
 
         return data
 
 
-def _dict_values_to_list(data: Dict[str, Any]) -> List[Any]:
-    """将多层字典的值转为按顺序排列的列表"""
+# TODO: 测试此功能移动到 full_data_loader 后是否能正常工作，并移除这段代码
+# def _dict_values_to_list(data: Dict[str, Any]) -> List[Any]:
+#     """将多层字典的值转为按顺序排列的列表"""
 
-    updrs_scores_list = []
+#     updrs_scores_list = []
 
-    def dict_values_to_list_recursive(data):
-        """递归遍历字典，将所有值依次存入列表"""
-        if not isinstance(data, dict):
-            updrs_scores_list.append(data)
-            return
+#     def dict_values_to_list_recursive(data):
+#         """递归遍历字典，将所有值依次存入列表"""
+#         if not isinstance(data, dict):
+#             updrs_scores_list.append(data)
+#             return
 
-        for _, value in data.items():
-            dict_values_to_list_recursive(value)
+#         for _, value in data.items():
+#             dict_values_to_list_recursive(value)
 
-    dict_values_to_list_recursive(data)
+#     dict_values_to_list_recursive(data)
 
-    return updrs_scores_list
+#     return updrs_scores_list

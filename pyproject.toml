@@ -25,4 +25,5 @@ exclude = '''
 /reports/
 .gitignore
 README.md
+/src/pipeline/feature/minirocket_multivariate.py
 '''

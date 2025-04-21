@@ -279,6 +279,13 @@ class ManualFeatureExtractor(FeatureExtractor):
 
         return mid_freq
 
+    """时频域特征"""
+
+    def _get_wavelet(self) -> List[float]:
+        """小波分解系数"""
+
+        pass
+
     """基于模型的特征"""
 
     # TODO: 修复错误
