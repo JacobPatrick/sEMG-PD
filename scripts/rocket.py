@@ -75,7 +75,7 @@ class ROCKETGaitPipeline:
             X,
             y,
             test_size=0.2,
-            random_state=42,  # stratify=gait_label
+            # random_state=42,  # stratify=gait_label
         )
 
         # 训练模型
@@ -87,8 +87,8 @@ class ROCKETGaitPipeline:
         y_train, pred_train = self.validate_model(
             models, (X_train, y_train), config.train
         )
-        results = evaluate_classification(y_train, pred_train)
-        train_results.append(results)
+        train_res = evaluate_classification(y_train, pred_train)
+        train_results.append(train_res)
         plot_confusion_matrix(
             y_train,
             pred_train,
@@ -105,8 +105,8 @@ class ROCKETGaitPipeline:
         y_test, pred_test = self.validate_model(
             models, (X_test, y_test), config.train
         )
-        results = evaluate_classification(y_test, pred_test)
-        test_results.append(results)
+        test_res = evaluate_classification(y_test, pred_test)
+        test_results.append(test_res)
         plot_confusion_matrix(
             y_test,
             pred_test,

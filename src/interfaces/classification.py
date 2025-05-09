@@ -11,7 +11,7 @@ class Classification(ABC):
         pass
 
     @abstractmethod
-    def fit(self, data: Tuple) -> List[Any]:
+    def fit(self, data: Tuple) -> Any:
         """训练模型"""
         pass
 
