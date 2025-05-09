@@ -2,6 +2,7 @@ import numpy as np
 from typing import Tuple, List
 from sklearn.svm import SVC
 from src.interfaces.classification import Classification
+from src.utils.param_tunning import grid_param_tunning
 
 
 class SVM(Classification):
@@ -32,7 +33,18 @@ class SVM(Classification):
         except IndexError:
             if np.unique(y).size < 2:  # 如果标签只有一个类别，则跳过
                 self.models.append(FixedOutputSVC(y[0]))
-            model = SVC(kernel='rbf', C=0.8, gamma=0.1)
+
+            # TODO: 样本量不足，暂时不进行交叉验证
+            # param_grid = {
+            #     'C': [0.1, 0.5, 1, 2, 5, 10],
+            #     'gamma': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]
+            # }
+            # best_param, best_score = grid_param_tunning(SVC(), param_grid, X, y)
+            # print(f"Best SVC params: {best_param} \n\n Best SVC accuracy: {best_score}")
+
+            model = SVC(
+                kernel='rbf', C=1.0, gamma=0.1
+            )  # TODO: 暂时使用默认参数
             model.fit(X, y)
             self.models.append(model)
 

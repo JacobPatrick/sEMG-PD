@@ -21,7 +21,7 @@ class MiniRocketFeatureExtractor(FeatureExtractor):
             dilations,
             num_features_per_dilation,
             biases,
-        ) = fit(X, num_features=5000, max_dilations_per_kernel=16)
+        ) = fit(X, num_features=800, max_dilations_per_kernel=16)
 
         # 数据转换
         features = transform(
