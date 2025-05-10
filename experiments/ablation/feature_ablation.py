@@ -3,7 +3,7 @@ from experiments.utils.feature_selection import (
     select_features,
     prepare_feature_sets,
 )
-from src.pipeline.pipeline import StandardMLPipeline
+from src.pipeline._pipeline import StandardMLPipeline
 
 
 class FeatureAblationStudy:

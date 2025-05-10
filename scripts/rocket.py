@@ -15,7 +15,7 @@ from src.pipeline.data.full_data_loader import FullDataLoader
 from src.pipeline.feature.minirocket_feature_extractor import (
     MiniRocketFeatureExtractor,
 )
-from src.pipeline.classification.svc import SVM
+from src.pipeline.classification._svc import SVM
 
 from src.config.config import (
     ExperimentConfig,

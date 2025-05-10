@@ -1,6 +1,8 @@
 import pytest
 from src.core.factories import FeatureExtractorFactory
-from src.pipeline.feature.manual_feature_extractor import ManualFeatureExtractor
+from src.pipeline.feature._manual_feature_extractor import (
+    ManualFeatureExtractor,
+)
 from src.pipeline.feature.cnn_lstm_feature_extractor import (
     CnnLstmFeatureExtractor,
 )

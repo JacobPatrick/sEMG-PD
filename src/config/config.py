@@ -47,6 +47,9 @@ class TrainConfig:
 
     model_type: str = "svm"  # 默认使用SVM模型
     model_params: Dict[str, Any] = field(default_factory=dict)
+    model_dir: str = "model"
+    model_name: str = "test_model.joblib"
+    report_dir: str = "reports"
 
 
 @dataclass

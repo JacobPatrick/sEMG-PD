@@ -1,5 +1,5 @@
 from typing import Type
-from pipeline.pipeline import MLPipeline
+from src.pipeline._pipeline import MLPipeline
 
 
 class PipelineFactory:

@@ -1,6 +1,6 @@
 from src.config.config import load_config
 from src.core.factories import setup_factories
-from src.pipeline.pipeline import StandardMLPipeline
+from src.pipeline._pipeline import StandardMLPipeline
 from experiments.ablation.feature_ablation import FeatureAblationStudy
 
 

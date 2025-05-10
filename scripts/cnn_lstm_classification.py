@@ -10,7 +10,7 @@ from src.core.factories import (
     DataSplitterFactory,
     ModelTrainerFactory,
 )
-from src.pipeline.pipeline import StandardMLPipeline
+from src.pipeline._pipeline import StandardMLPipeline
 from src.pipeline.data.full_data_loader import FullDataLoader
 from src.pipeline.preprocess.pass_through_preprocessor import (
     PassThroughPreprocessor,

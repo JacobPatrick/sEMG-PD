@@ -1,5 +1,7 @@
 import pandas as pd
-from src.pipeline.feature.manual_feature_extractor import ManualFeatureExtractor
+from src.pipeline.feature._manual_feature_extractor import (
+    ManualFeatureExtractor,
+)
 from src.interfaces.feature import FeatureExtractor
 import numpy as np
 

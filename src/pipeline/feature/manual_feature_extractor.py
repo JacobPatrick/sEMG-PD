@@ -1,12 +1,11 @@
-from typing import Dict, List, Any
 import numpy as np
-import pandas as pd
 from scipy import stats
 from src.interfaces.feature import FeatureExtractor
 from src.config.config import FeatureConfig
+from typing import Tuple, Dict, List, Any
 
 
-class ManualFeatureExtractor(FeatureExtractor):
+class NewManualFeatureExtractor(FeatureExtractor):
     """手工特征提取器实现"""
 
     def __init__(self):
@@ -31,163 +30,72 @@ class ManualFeatureExtractor(FeatureExtractor):
             "mdf": self._get_mdf,
         }
 
-        self.model_based_features = {
-            "ar": self._get_ar,
-        }
-
     def extract(
-        self, data: Dict[str, Any], config: FeatureConfig
-    ) -> Dict[str, Any]:
-        """实现手工特征提取逻辑
-
-        Args:
-            data: 预处理后的数据，格式为:
-                {
-                    "raw": {
-                        "sub-1": {
-                            "sit": pd.DataFrame(...),
-                            ...
-                        },
-                        ...
-                    },
-                    "labels": {...}
-                }
-            config: 配置参数，包含:
-                - window_size: 窗口大小(秒)
-                - overlap: 重叠大小(秒)
-                - sampling_rate: 采样率
-                - features: 要提取的特征列表
-
-        Returns:
-            features_data: 特征数据，格式为:
-                {
-                    "features": {
-                        "sub-1": {
-                            "sit": {
-                                "window_0": {
-                                    "channel1": {...},
-                                    ...
-                                },
-                                ...
-                            },
-                            ...
-                        },
-                        ...
-                    },
-                    "labels": {...}
-                }
-        """
-        features_data = {"features": {}, "labels": data["labels"]}
-
-        # 验证输入数据结构
-        if "raw" not in data:
-            raise ValueError("Input data must contain 'raw' key")
-        if "labels" not in data:
-            raise ValueError("Input data must contain 'labels' key")
+        self, dataset: Tuple[np.ndarray, np.ndarray], config: FeatureConfig
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        data = dataset[0]
+        labels = dataset[1]
 
         # 获取配置参数
         window_size = config.window_size
         overlap = config.overlap
         sampling_rate = config.sampling_rate
+        feature_names = config.features
 
         # 计算窗口大小（采样数）
         window_samples = int(window_size * sampling_rate)
         overlap_samples = int(overlap * sampling_rate)
         stride = window_samples - overlap_samples
 
-        # 对每个受试者的每个实验进行特征提取
-        for subject_id, subject_data in data["raw"].items():
-            features_data["features"][subject_id] = {}
+        n_samples, n_channels, ts_length = data.shape
 
-            for exp_name, exp_data in subject_data.items():
-                # 验证数据帧结构
-                if not isinstance(exp_data, pd.DataFrame):
-                    raise ValueError(
-                        f"Experiment data for {subject_id}/{exp_name} must be a DataFrame"
+        n_windows = int((ts_length - overlap_samples) // stride) + 1
+
+        n_features = len(feature_names)
+        features = np.zeros((n_samples, n_channels, n_features, n_windows))
+
+        for i in range(n_samples):
+            for j in range(n_channels):
+                channel_data = data[i, j]
+                channel_features = []
+                for w in range(n_windows):
+                    start_idx = w * stride
+                    end_idx = start_idx + window_samples
+                    if end_idx > ts_length:
+                        break
+                    window = channel_data[start_idx:end_idx]
+                    channel_features.append(
+                        self._extract_window_features(
+                            window, feature_names, sampling_rate
+                        )
                     )
 
-                # 初始化实验数据结构
-                # exp_features = {
-                #     "windows": {},
-                #     "metadata": {
-                #         "window_size": window_size,
-                #         "overlap": overlap,
-                #         "sampling_rate": sampling_rate,
-                #         "n_channels": len(exp_data.columns) - 1,  # 减去时间列
-                #         "n_features": len(self.time_domain_features)
-                #         + len(self.freq_domain_features),
-                #     },
-                # }
-                exp_features = {}
+                features[i, j] = np.array(channel_features).T
 
-                try:
-                    # 获取信号数据（去除时间列）
-                    signals = exp_data.drop('time', axis=1)
-                except KeyError as e:
-                    print(f"Error dropping 'time' column: {e}")
-                    print("Available columns:", exp_data.columns.tolist())
-                    raise
-
-                # 对数据进行分窗并提取特征
-                n_samples = len(signals)
-                window_id = 0
-
-                for start in range(0, n_samples - window_samples + 1, stride):
-                    window_features = {}
-                    end = start + window_samples
-
-                    # 对每个通道提取特征
-                    for channel in signals.columns:
-                        window_data = signals[channel].values[start:end]
-                        window_features[channel] = (
-                            self._extract_window_features(
-                                window_data, sampling_rate, config.features
-                            )
-                        )
-
-                    # exp_features["windows"][
-                    #     f"window_{window_id}"
-                    # ] = window_features
-                    exp_features[f"window_{window_id}"] = window_features
-                    window_id += 1
-
-                # exp_features["metadata"]["n_windows"] = window_id
-                features_data["features"][subject_id][exp_name] = exp_features
-
-        return features_data
+        return features, labels
 
     def _extract_window_features(
-        self,
-        window_data: np.ndarray,
-        sampling_rate: int,
-        features_list: List[str],
-    ) -> Dict[str, float]:
-        """提取单个窗口的所有特征"""
-        features = {}
+        self, window: np.ndarray, features: List[str], sampling_rate: int
+    ) -> np.ndarray:
+        """从单个窗口中提取特征"""
+        feature_vector = []
 
         # 设置特征提取的上下文
-        self.vec = window_data
+        self.vec = window
         self.fs = sampling_rate
 
-        # 提取时域特征
-        for name, func in self.time_domain_features.items():
-            if features_list and name not in features_list:
-                continue
-            features[name] = func()
-
-        # 提取频域特征
-        for name, func in self.freq_domain_features.items():
-            if features_list and name not in features_list:
-                continue
-            features[name] = func()
-
-        # 提取基于模型的特征
-        # for name, func in self.model_based_features.items():
-        #     if features_list and name not in features_list:
-        #         continue
-        #     features[name] = func()
-
-        return features
+        for feature in features:
+            if feature in self.time_domain_features:
+                feature_vector.append(
+                    self.time_domain_features[feature](window)
+                )
+            elif feature in self.freq_domain_features:
+                feature_vector.append(
+                    self.freq_domain_features[feature](window)
+                )
+            else:
+                raise ValueError(f"Unsupported feature: {feature}")
+        return np.array(feature_vector)
 
     """时域特征"""
 
@@ -278,17 +186,3 @@ class ManualFeatureExtractor(FeatureExtractor):
         )
 
         return mid_freq
-
-    """时频域特征"""
-
-    def _get_wavelet(self) -> List[float]:
-        """小波分解系数"""
-
-        pass
-
-    """基于模型的特征"""
-
-    # TODO: 修复错误
-    def _get_ar(self) -> float:
-        """AR模型系数"""
-        return np.linalg.eig(np.cov(self.vec))[0][0]

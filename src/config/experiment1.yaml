@@ -19,16 +19,18 @@ feature:
   features: [
     "mav", "iemg", "rms", "zc", "var",
     "ssc", "wamp", "ssi", "kurt", "wl",
-    "tp", "mp", "mnf", "mdf"
+    "mnf", "mdf"
     ]
 
 # TODO: 数据集分割配置
 split:
-  split_type: "train_val_test_split"
+  split_type: "train_test_split"
 
 # 模型训练配置
 train:
   model_type: "svm"
+  model_dir: "model"
+  report_dir: "reports"
 
 # 结果输出配置
 output:

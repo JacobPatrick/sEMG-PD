@@ -1,7 +1,9 @@
 from src.core.factories import DataLoaderFactory, FeatureExtractorFactory
 from src.pipeline.data.full_data_loader import FullDataLoader
-from src.pipeline.feature.manual_feature_extractor import ManualFeatureExtractor
-from src.pipeline.pipeline import StandardMLPipeline
+from src.pipeline.feature._manual_feature_extractor import (
+    ManualFeatureExtractor,
+)
+from src.pipeline._pipeline import StandardMLPipeline
 
 
 class TestDataPipeline:
