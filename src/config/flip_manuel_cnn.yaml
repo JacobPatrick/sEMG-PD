@@ -1,0 +1,23 @@
+data:
+  data_dir: "data/"
+  data_name: "r_flip.npz"
+  data_loader: "new_loader"
+
+feature:
+  feature_extractor: "manual"
+  window_size: 0.2
+  overlap: 0.1
+  sampling_rate: 2000
+  features: [
+    "iemg", "rms", "zc", "var", "ssc",
+    "wamp", "ssi", "wl", "mnf", "mdf"
+  ]
+
+split:
+  split_type: "train_val_test_split"
+
+train:
+  model_type: "cnn"
+  model_dir: "model"
+  report_dir: "reports"
+  

@@ -18,12 +18,11 @@ class NewDataLoader(DataLoader):
             包含数据和标签的元组 (data, labels)
         """
         # 获取数据目录
-        data_dir = (
-            config.data_dir if hasattr(config, "data_dir") else "raw/grad-proj/"
-        )
+        data_dir = config.data_dir if hasattr(config, "data_dir") else "data/"
+        data_name = config.data_name if hasattr(config, "data_name") else ""
 
         # 加载数据和标签
-        dataset = np.load(data_dir + "data.npz")
+        dataset = np.load(data_dir + data_name)
         data = dataset["data"]
         labels = dataset["labels"]
 

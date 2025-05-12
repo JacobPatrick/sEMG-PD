@@ -2,6 +2,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import Dict, List, Tuple, Any
 from src.utils.save_model import save_model
+from src.utils.model_evaluation import evaluate_classification
 from src.config.config import (
     ExperimentConfig,
     DataConfig,
@@ -34,15 +35,22 @@ class MLPipeline(ABC):
         """
         # TODO: 定义算法骨架
         # 1. 加载数据集
+        print("Loading data...")
         dataset = self.load_data(config.data)
         # 2. 特征提取
+        print("Extracting features...")
         features = self.extract_features(dataset, config.feature)
         # 3. train-test 划分
+        print("Splitting data...")
         splitted_data = self.split_data(features, config.split)
         # 4. 训练模型，保存训练集结果
+        print("Training model...")
         models = self.train_model(splitted_data["train"], config.train)
         # 5. 测试模型，保存测试集结果
+        print("Evaluating model...")
         self.test_model(models, splitted_data["test"], config.train)
+
+        print("Done!")
 
     @abstractmethod
     def load_data(self, config: DataConfig) -> Tuple[np.ndarray, np.ndarray]:
@@ -124,7 +132,7 @@ class StandardMLPipeline(MLPipeline):
         """划分训练集和测试集"""
         splitter_type = config.split_type
         splitter = self.data_splitter_factory.create(splitter_type)
-        return splitter.train_val_test_split(dataset)
+        return splitter.split(dataset)
 
     def train_model(
         self, features: Tuple[np.ndarray, np.ndarray], config: TrainConfig
@@ -137,21 +145,32 @@ class StandardMLPipeline(MLPipeline):
 
         # 保存训练集结果
         for i in range(len(models)):
+            evaluation = evaluate_classification(
+                results[0][:, i], results[1][:, i]
+            )
             try:
                 with open(
                     config.report_dir + f"/train_results_{i}.txt", "w"
                 ) as f:
                     f.write(
-                        f"y=\n{results[0][:, i]}\n\ny_pred=\n{results[1][:, i]}"
+                        f"y=\n{results[0][:, i]}\n\ny_pred=\n{results[1][:, i]}\n\n{evaluation}"
                     )
             except Exception as e:
                 print(f"Error saving train results: {e}")
             finally:
-                save_model(
-                    models[i],
-                    config.model_dir,
-                    f"{config.model_name}_{i}.joblib",
-                )
+                # 针对 CNN 分类模型
+                if hasattr(models[i], "model"):
+                    save_model(
+                        models[i].model,
+                        config.model_dir,
+                        f"{config.model_name}_{i}.joblib",
+                    )
+                else:
+                    save_model(
+                        models[i],
+                        config.model_dir,
+                        f"{config.model_name}_{i}.joblib",
+                    )
 
         return models
 
@@ -167,12 +186,15 @@ class StandardMLPipeline(MLPipeline):
 
         results = tester.predict(features)
         for i in range(len(models)):
+            evaluation = evaluate_classification(
+                results[0][:, i], results[1][:, i]
+            )
             try:
                 with open(
                     config.report_dir + f"/test_results_{i}.txt", "w"
                 ) as f:
                     f.write(
-                        f"y=\n{results[0][:, i]}\n\ny_pred=\n{results[1][:, i]}"
+                        f"y=\n{results[0][:, i]}\n\ny_pred=\n{results[1][:, i]}\n\n{evaluation}"
                     )
             except Exception as e:
                 print(f"Error saving test results: {e}")

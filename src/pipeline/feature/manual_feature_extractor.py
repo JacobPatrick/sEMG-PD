@@ -49,7 +49,7 @@ class NewManualFeatureExtractor(FeatureExtractor):
 
         n_samples, n_channels, ts_length = data.shape
 
-        n_windows = int((ts_length - overlap_samples) // stride) + 1
+        n_windows = max(int((ts_length - overlap_samples) // stride), 1)
 
         n_features = len(feature_names)
         features = np.zeros((n_samples, n_channels, n_features, n_windows))
@@ -72,6 +72,14 @@ class NewManualFeatureExtractor(FeatureExtractor):
 
                 features[i, j] = np.array(channel_features).T
 
+            # 对所有通道中提取的单个特征归一化
+            for k in range(n_features):
+                min_value = np.min(features[i, :, k])
+                max_value = np.max(features[i, :, k])
+                features[i, :, k] = (features[i, :, k] - min_value) / (
+                    max_value - min_value
+                )
+
         return features, labels
 
     def _extract_window_features(
@@ -84,17 +92,18 @@ class NewManualFeatureExtractor(FeatureExtractor):
         self.vec = window
         self.fs = sampling_rate
 
-        for feature in features:
-            if feature in self.time_domain_features:
-                feature_vector.append(
-                    self.time_domain_features[feature](window)
-                )
-            elif feature in self.freq_domain_features:
-                feature_vector.append(
-                    self.freq_domain_features[feature](window)
-                )
-            else:
-                raise ValueError(f"Unsupported feature: {feature}")
+        # 提取时域特征
+        for name, func in self.time_domain_features.items():
+            if features and name not in features:
+                continue
+            feature_vector.append(func())
+
+        # 提取频域特征
+        for name, func in self.freq_domain_features.items():
+            if features and name not in features:
+                continue
+            feature_vector.append(func())
+
         return np.array(feature_vector)
 
     """时域特征"""
@@ -136,6 +145,7 @@ class NewManualFeatureExtractor(FeatureExtractor):
         """简单平方积分"""
         return np.sum(np.square(self.vec))
 
+    # FIXME: 归一化后部分数值过于接近导致逢赌计算出现精度损失
     def _get_kurt(self) -> float:
         """峰度"""
         return stats.kurtosis(self.vec)

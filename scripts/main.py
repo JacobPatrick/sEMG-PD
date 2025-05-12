@@ -18,11 +18,11 @@ from src.pipeline.feature.manual_feature_extractor import (
 from src.pipeline.feature.minirocket_feature_extractor import (
     MiniRocketFeatureExtractor,
 )
-from src.pipeline.split.splitter import DataSplitter
+from src.pipeline.split.train_val_test_splitter import TrainValTestSplitter
 from src.pipeline.split.train_test_splitter import TrainTestSplitter
 from src.pipeline.classification.svc import SVM
-
-# TODO: CNN classifier
+from src.pipeline.classification.cnn import CNN
+from src.pipeline.classification.lda import LDAC
 
 from src.config.config import ExperimentConfig
 
@@ -40,11 +40,13 @@ def setup_factories():
     # 数据分割器工厂
     data_splitter_factory = DataSplitterFactory()
     data_splitter_factory.register("train_test_split", TrainTestSplitter)
-    data_splitter_factory.register("train_val_test_split", DataSplitter)
+    data_splitter_factory.register("train_val_test_split", TrainValTestSplitter)
 
     # 模型训练工厂
     model_trainer_factory = ModelTrainerFactory()
     model_trainer_factory.register("svm", SVM)
+    model_trainer_factory.register("cnn", CNN)
+    model_trainer_factory.register("lda", LDAC)
 
     return {
         "data_loader_factory": data_loader_factory,
@@ -65,7 +67,7 @@ def load_config(config_type: str, yaml_path: str) -> ExperimentConfig | None:
 
 if __name__ == "__main__":
     # 加载配置文件
-    config = load_config("experiment", "src/config/ROCKETGait.yaml")
+    config = load_config("experiment", "src/config/flip_minirocket_lda.yaml")
 
     # 初始化工厂
     factories = setup_factories()

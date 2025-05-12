@@ -1,5 +1,7 @@
+import copy
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import TensorDataset, DataLoader, SubsetRandomSampler
 from sklearn.model_selection import StratifiedKFold
@@ -15,56 +17,119 @@ class CNN(Classification):
         X, y = data
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        n_samples, n_channels, n_features, n_windows = X.shape
+
+        try:
+            self.label_map_list = [{} for _ in range(y.shape[1])]
+        except IndexError:  # 处理一维标签的情况
+            self.label_map_list = [{}]
+
         # 为每个输出维度训练一个CNN模型
         self.models = []
         try:
             for i in range(y.shape[1]):  # 遍历每个输出维度
-                if np.unique(y[:, i]).size < 2:  # 如果标签只有一个类别，则跳过
-                    self.models.append(FixedOutputCNN(fixed_output=y[:, i][0]))
+                unique_labels = np.unique(y[:, i])
+                if len(unique_labels) < 2:  # 如果标签只有一个类别，则跳过
+                    fixed_model = FixedOutputCNN(fixed_output=y[:, i][0])
+                    self.models.append(ModelWrapper(model=fixed_model))
                     continue
 
+                # (使用CNN分类器时)为不连续的标签创建一个从 0 开始的映射
+                label_map = {
+                    label: idx for idx, label in enumerate(unique_labels)
+                }
+                y_mapped = np.array(
+                    [label_map[int(label)] for label in y[:, i]]
+                )
+
                 # 创建模型并训练
-                model = CNN1DClassifier(
-                    input_size=X.shape[1],
-                    num_classes=np.unique(y[:, i]).size,
-                    num_windows=X.shape[2],
+                cnn_model = CNN1DClassifier(
+                    input_size=n_channels * n_features,
+                    num_classes=len(unique_labels),
+                    num_windows=n_windows,
                 ).to(device)
 
-                # 训练模型，交叉验证逻辑已移至fit_cv方法
-                model.fit_cv(X, y[:, i], batch_size=32, num_epochs=20, lr=0.001)
-                self.models.append(model)
+                # 训练模型，含交叉验证
+                cnn_model.fit_cv(
+                    X, y_mapped, batch_size=32, num_epochs=50, lr=0.0001
+                )
+                self.models.append(ModelWrapper(model=cnn_model, label_map=label_map))
 
         except IndexError:  # 处理一维标签的情况
-            if np.unique(y).size < 2:  # 如果标签只有一个类别，则使用固定输出
-                self.models.append(FixedOutputCNN(fixed_output=y[0]))
+            unique_labels = np.unique(y)
+            if len(unique_labels) < 2:  # 如果标签只有一个类别，则使用固定输出
+                fixed_model = FixedOutputCNN(fixed_output=y)
+                self.models.append(ModelWrapper(model=fixed_model))
             else:
+                # (使用CNN分类器时)为不连续的标签创建一个从 0 开始的映射
+                label_map = {
+                    label: idx for idx, label in enumerate(unique_labels)
+                }
+                y_mapped = np.array([label_map[label] for label in y])
+
                 # 创建模型并训练
-                model = CNN1DClassifier(
-                    input_size=X.shape[1],
-                    num_classes=np.unique(y).size,
-                    num_windows=X.shape[2],
+                cnn_model = CNN1DClassifier(
+                    input_size=n_samples * n_features,
+                    num_classes=len(unique_labels),
+                    num_windows=n_windows,
                 ).to(device)
 
                 # 训练模型（含交叉验证）
-                model.fit_cv(X, y, batch_size=32, num_epochs=20, lr=0.001)
-                self.models.append(model)
+                cnn_model.fit_cv(
+                    X, y_mapped, batch_size=32, num_epochs=50, lr=0.0005
+                )
+                self.models.append(ModelWrapper(model=cnn_model, label_map=label_map))
 
         return self.models
-    
-    def predict(self, data: Tuple) -> List:
+
+    def predict_proba(self, data: Tuple) -> Tuple[np.ndarray, np.ndarray]:
+        X, y = data
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # 对每个模型进行预测
+        proba_predictions = []
+        for model_wrapper in self.models:
+            if isinstance(model_wrapper.model, FixedOutputCNN):  # 处理固定输出模型
+                proba_pred = model_wrapper.predict_proba(X)
+                proba_predictions.append(proba_pred)
+            else:
+                # 将输入转换为PyTorch张量并移动到设备上
+                X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
+                proba_pred = model_wrapper.predict_proba(X_tensor)
+                
+                # 标签反向映射
+                if model_wrapper.label_map:
+                    # 确定最大标签值以创建足够大的数组
+                    max_label = max(model_wrapper.label_map.keys())
+                    proba_pred_true_label = np.zeros((proba_pred.shape[0], max_label + 1))
+                    for label, idx in model_wrapper.label_map.items():
+                        proba_pred_true_label[:, label] = proba_pred[:, idx]
+                    proba_predictions.append(proba_pred_true_label)
+                else:
+                    proba_predictions.append(proba_pred)
+
+        return y, np.array(proba_predictions).T  # 预测结果张量转置以匹配原始数据形状
+
+    def predict(self, data: Tuple) -> Tuple[np.ndarray, np.ndarray]:
         X, y = data
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # 对每个模型进行预测
         predictions = []
-        for model in self.models:
-            if isinstance(model, FixedOutputCNN):  # 处理固定输出模型
-                pred = model.predict(X)
+        for model_wrapper in self.models:
+            if isinstance(model_wrapper.model, FixedOutputCNN):  # 处理固定输出模型
+                pred = model_wrapper.predict(X)
                 predictions.append(pred)
             else:
-                # 将输入转换为 PyTorch 张量并移动到设备上
+                # 将输入转换为PyTorch张量并移动到设备上
                 X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
-                pred = model.predict(X_tensor)
+                pred = model_wrapper.predict(X_tensor)
+                
+                # 标签反向映射
+                if model_wrapper.label_map:
+                    reverse_map = {idx: label for label, idx in model_wrapper.label_map.items()}
+                    pred = np.array([reverse_map[label] for label in pred])
+                
                 predictions.append(pred)
 
         return y, np.array(predictions).T  # 预测结果张量转置以匹配原始数据形状
@@ -85,7 +150,10 @@ class CNN1DClassifier(nn.Module):
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
             nn.Conv1d(
-                in_channels=64, out_channels=128, kernel_size=3, padding=1
+                in_channels=64,
+                out_channels=128,
+                kernel_size=3,
+                padding=1
             ),
             nn.BatchNorm1d(128),
             nn.ReLU(),
@@ -137,6 +205,9 @@ class CNN1DClassifier(nn.Module):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.to(device)
 
+        # 保存初始权重以便在每个折上重置
+        initial_weights = copy.deepcopy(self.state_dict())
+
         # 将数据转换为 PyTorch 张量
         X_tensor = self._to_tensor(X)
         y_tensor = (
@@ -151,7 +222,8 @@ class CNN1DClassifier(nn.Module):
         # 定义分层交叉验证
         skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
-        criterion = nn.CrossEntropyLoss()
+        # criterion = nn.CrossEntropyLoss()
+        criterion = OrdinalCrossEntropyLoss(alpha=0.5, num_classes=self.classifier[-1].out_features)
         best_acc = 0.0
         best_weights = None
 
@@ -161,6 +233,9 @@ class CNN1DClassifier(nn.Module):
         ):
             print(f'FOLD {fold_idx + 1}')
             print('--------------------------------')
+
+            # 在每个折开始前重置模型权重到初始状态
+            self.load_state_dict(copy.deepcopy(initial_weights))
 
             # 创建训练和验证数据加载器
             train_subsampler = SubsetRandomSampler(train_ids)
@@ -180,6 +255,15 @@ class CNN1DClassifier(nn.Module):
             fold_best_acc = 0.0
             fold_best_weights = None
 
+            # 定义学习率调度器
+            # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            #     optimizer, patience=3
+            # )
+
+            # 定义早停规则
+            patience_counter = 0
+            patience_limit = 20  # 先放宽一点
+
             for epoch in range(num_epochs):
                 self.train()
                 running_loss = 0.0
@@ -193,6 +277,7 @@ class CNN1DClassifier(nn.Module):
                     outputs = self(inputs)
                     loss = criterion(outputs, labels)
                     loss.backward()
+                    # torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)   # 梯度裁剪（暂时不用）  
                     optimizer.step()
 
                     running_loss += loss.item() * inputs.size(0)
@@ -221,12 +306,27 @@ class CNN1DClassifier(nn.Module):
                         val_correct += predicted.eq(labels).sum().item()
 
                 val_acc = val_correct / val_total
-                print(f', Val Acc: {val_acc:.4f}')
+                val_loss = running_loss / len(val_subsampler)
+                print(f', Val Acc: {val_acc:.4f}, Val Loss: {val_loss:.4f}')
+
+                # 早停策略
+                if val_acc > fold_best_acc:
+                    fold_best_acc = val_acc
+                    fold_best_weights = self.state_dict().copy()
+                    patience_counter = 0
+                else:
+                    patience_counter += 1
+                    if patience_counter >= patience_limit:
+                        print(f'Early stopping at epoch {epoch+1}')
+                        break
 
                 # 保存这一折的最佳模型权重
                 if val_acc > fold_best_acc:
                     fold_best_acc = val_acc
                     fold_best_weights = self.state_dict().copy()
+
+                # 更新学习率
+                # scheduler.step(val_loss * 5e-4)
 
             # 更新整体最佳模型
             if fold_best_acc > best_acc:
@@ -295,13 +395,72 @@ class FixedOutputCNN:
         """返回概率预测结果"""
         n_samples = X.shape[0]
         # 生成只有一个类的概率分布
-        probas = np.zeros((n_samples, 2))
-        if self.fixed_output == 1:
-            probas[:, 1] = 1.0
-        else:
-            probas[:, 0] = 1.0
+        probas = np.zeros((n_samples, 5))
+        probas[:, self.fixed_output] = 1.0
         return probas
 
     def predict(self, X):
         """对所有输入预测同一个类别"""
         return np.full((X.shape[0],), self.fixed_output)
+
+
+class ModelWrapper:
+    """模型包装类，封装模型和对应的标签映射
+    
+    属性:
+        model: CNN1DClassifier 或 FixedOutputCNN 的实例
+        label_map: 可选的标签映射字典
+    """
+    def __init__(self, model, label_map=None):
+        self.model = model
+        self.label_map = label_map
+    
+    def to(self, device):
+        """将模型移动到指定设备"""
+        self.model.to(device)
+        return self
+    
+    def fit_cv(self, X, y, **kwargs):
+        """训练模型"""
+        return self.model.fit_cv(X, y, **kwargs)
+    
+    def predict_proba(self, X):
+        """返回概率预测结果"""
+        return self.model.predict_proba(X)
+    
+    def predict(self, X):
+        """返回预测类别"""
+        return self.model.predict(X)
+
+
+class OrdinalCrossEntropyLoss(nn.Module):
+    """
+    有序交叉熵损失函数
+    """
+
+    def __init__(self, alpha=0.5, num_classes=None):
+        """
+        Args:
+            alpha: 损失函数的权重参数，空值距离损失和交叉熵损失的比例
+            num_classes: 类别数量，用于归一化距离损失
+        """
+        super(OrdinalCrossEntropyLoss, self).__init__()
+        self.alpha = alpha
+        self.ce_loss = nn.CrossEntropyLoss(reduction="none")
+        self.num_classes = num_classes
+
+    def forward(self, outputs, targets):
+        # 计算标准交叉熵损失
+        ce_loss = self.ce_loss(outputs, targets)
+        # 计算距离损失
+        softmax_probs = F.softmax(outputs, dim=1)
+        class_indices = torch.arange(outputs.size(1), device=outputs.device).float()
+        expected_classes = torch.sum(softmax_probs * class_indices.unsqueeze(0), dim=1)
+        distance_loss = torch.abs(expected_classes - targets.float())
+        # 归一化距离损失项
+        if self.num_classes and self.num_classes > 1:
+            distance_loss = distance_loss / (self.num_classes - 1)
+        
+        combined_loss = ce_loss + self.alpha * distance_loss
+
+        return combined_loss.mean()

@@ -7,10 +7,11 @@ from typing import Dict, List, Any, Optional
 class DataConfig:
     """数据加载配置"""
 
-    data_dir: str = "raw/"
+    data_name: str
+    data_dir: str = "data/"
     labels_file: str = "labels.csv"
     data_range: Optional[List[int]] = None  # 可选的数据集范围
-    data_loader: str = "full_loader"  # 默认全量加载
+    data_loader: str = "new_loader"
 
 
 @dataclass
@@ -110,14 +111,19 @@ class ExperimentConfig:
     def validate_config(self) -> bool:
         """验证配置的有效性"""
         # 数据加载器
-        valid_loaders = ["full_loader", "lazy_loader", "batch_loader"]
+        valid_loaders = [
+            "full_loader",
+            "lazy_loader",
+            "batch_loader",
+            "new_loader",
+        ]
         if self.data.data_loader not in valid_loaders:
             raise ValueError(
                 f"Invalid data loader type. Must be one of {valid_loaders}"
             )
 
         # 特征提取器
-        valid_extractors = ["manual", "deep_learning"]
+        valid_extractors = ["manual", "deep_learning", "minirocket"]
         if self.feature.feature_extractor not in valid_extractors:
             raise ValueError(
                 f"Invalid feature extractor type. Must be one of {valid_extractors}"
