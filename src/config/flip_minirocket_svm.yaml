@@ -1,0 +1,15 @@
+data:
+  data_dir: "data/"
+  data_name: "r_flip.npz"
+  data_loader: "new_loader"
+
+feature:
+  feature_extractor: "minirocket"
+
+split:
+  split_type: "train_val_test_split"
+
+train:
+  model_type: "svm"
+  model_dir: "model"
+  report_dir: "reports"

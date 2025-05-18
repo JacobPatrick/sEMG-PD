@@ -6,7 +6,9 @@ from typing import Tuple, Dict, List, Any
 
 
 class MiniRocketFeatureExtractor(FeatureExtractor):
-    def extract(self, dataset: Tuple[np.ndarray, np.ndarray], config: FeatureConfig) -> Tuple[np.ndarray, np.ndarray]:
+    def extract(
+        self, dataset: Tuple[np.ndarray, np.ndarray], config: FeatureConfig
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """特征提取"""
         data = dataset[0]
         labels = dataset[1]

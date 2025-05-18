@@ -3,9 +3,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+from matplotlib import pyplot as plt
 from torch.utils.data import TensorDataset, DataLoader, SubsetRandomSampler
 from sklearn.model_selection import StratifiedKFold
 from src.interfaces.classification import Classification
+from src.utils.visualization import plot_training_curve, plot_confusion_matrix
 from typing import Tuple, List
 
 
@@ -53,7 +55,19 @@ class CNN(Classification):
                 cnn_model.fit_cv(
                     X, y_mapped, batch_size=32, num_epochs=50, lr=0.0001
                 )
-                self.models.append(ModelWrapper(model=cnn_model, label_map=label_map))
+                self.models.append(
+                    ModelWrapper(model=cnn_model, label_map=label_map)
+                )
+
+                # 绘制训练曲线
+                history = cnn_model.get_training_history()
+                if not history:
+                    continue
+                fig = plot_training_curve(
+                    model=cnn_model,
+                    save_path=f"reports/fig/final/gait_cnn_train_curve_{i}.png",
+                )
+                plt.close(fig)
 
         except IndexError:  # 处理一维标签的情况
             unique_labels = np.unique(y)
@@ -78,7 +92,9 @@ class CNN(Classification):
                 cnn_model.fit_cv(
                     X, y_mapped, batch_size=32, num_epochs=50, lr=0.0005
                 )
-                self.models.append(ModelWrapper(model=cnn_model, label_map=label_map))
+                self.models.append(
+                    ModelWrapper(model=cnn_model, label_map=label_map)
+                )
 
         return self.models
 
@@ -88,27 +104,54 @@ class CNN(Classification):
 
         # 对每个模型进行预测
         proba_predictions = []
-        for model_wrapper in self.models:
-            if isinstance(model_wrapper.model, FixedOutputCNN):  # 处理固定输出模型
+        for model_id, model_wrapper in enumerate(self.models):
+            if isinstance(
+                model_wrapper.model, FixedOutputCNN
+            ):  # 处理固定输出模型
                 proba_pred = model_wrapper.predict_proba(X)
                 proba_predictions.append(proba_pred)
             else:
                 # 将输入转换为PyTorch张量并移动到设备上
                 X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
                 proba_pred = model_wrapper.predict_proba(X_tensor)
-                
+
                 # 标签反向映射
                 if model_wrapper.label_map:
                     # 确定最大标签值以创建足够大的数组
                     max_label = max(model_wrapper.label_map.keys())
-                    proba_pred_true_label = np.zeros((proba_pred.shape[0], max_label + 1))
+                    proba_pred_true_label = np.zeros(
+                        (proba_pred.shape[0], max_label + 1)
+                    )
                     for label, idx in model_wrapper.label_map.items():
                         proba_pred_true_label[:, label] = proba_pred[:, idx]
-                    proba_predictions.append(proba_pred_true_label)
-                else:
-                    proba_predictions.append(proba_pred)
 
-        return y, np.array(proba_predictions).T  # 预测结果张量转置以匹配原始数据形状
+                    # 补齐 5 种类型
+                    complete_proba = np.zeros((y.shape[0], 5))
+                    y_unique = np.unique(y[:, model_id])
+                    for i in range(5):
+                        if i in y_unique:
+                            complete_proba[:, i] = proba_pred_true_label[
+                                :, np.where(y_unique == i)[0][0]
+                            ]
+                        else:
+                            complete_proba[:, i] = 0.0
+
+                    proba_predictions.append(complete_proba)
+                else:
+                    # 补齐 5 种类型
+                    complete_proba = np.zeros((y.shape[0], 5))
+                    y_unique = np.unique(y[:, model_id])
+                    for i in range(5):
+                        if i in y_unique:
+                            complete_proba[:, i] = proba_pred_true_label[-1][
+                                :, np.where(y_unique == i)[0][0]
+                            ]
+                        else:
+                            complete_proba[:, i] = 0.0
+
+                    proba_predictions.append(complete_proba)
+
+        return y, np.array(proba_predictions).T
 
     def predict(self, data: Tuple) -> Tuple[np.ndarray, np.ndarray]:
         X, y = data
@@ -116,21 +159,34 @@ class CNN(Classification):
 
         # 对每个模型进行预测
         predictions = []
-        for model_wrapper in self.models:
-            if isinstance(model_wrapper.model, FixedOutputCNN):  # 处理固定输出模型
+        for idx, model_wrapper in enumerate(self.models):
+            if isinstance(
+                model_wrapper.model, FixedOutputCNN
+            ):  # 处理固定输出模型
                 pred = model_wrapper.predict(X)
                 predictions.append(pred)
             else:
                 # 将输入转换为PyTorch张量并移动到设备上
                 X_tensor = torch.tensor(X, dtype=torch.float32).to(device)
                 pred = model_wrapper.predict(X_tensor)
-                
+
                 # 标签反向映射
                 if model_wrapper.label_map:
-                    reverse_map = {idx: label for label, idx in model_wrapper.label_map.items()}
+                    reverse_map = {
+                        idx: label
+                        for label, idx in model_wrapper.label_map.items()
+                    }
                     pred = np.array([reverse_map[label] for label in pred])
-                
+
                 predictions.append(pred)
+
+            # 绘制混淆矩阵
+            plot_confusion_matrix(
+                label_true=y[:, idx],
+                label_pred=pred,
+                classes=["0", "1", "2", "3", "4"],
+                save_path=f"reports/fig/final/gait_cnn_test_confusion_matrix_{idx}.png",
+            )
 
         return y, np.array(predictions).T  # 预测结果张量转置以匹配原始数据形状
 
@@ -150,10 +206,7 @@ class CNN1DClassifier(nn.Module):
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
             nn.Conv1d(
-                in_channels=64,
-                out_channels=128,
-                kernel_size=3,
-                padding=1
+                in_channels=64, out_channels=128, kernel_size=3, padding=1
             ),
             nn.BatchNorm1d(128),
             nn.ReLU(),
@@ -223,9 +276,12 @@ class CNN1DClassifier(nn.Module):
         skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
 
         # criterion = nn.CrossEntropyLoss()
-        criterion = OrdinalCrossEntropyLoss(alpha=0.5, num_classes=self.classifier[-1].out_features)
+        criterion = OrdinalCrossEntropyLoss(
+            alpha=0.5, num_classes=self.classifier[-1].out_features
+        )
         best_acc = 0.0
         best_weights = None
+        self.best_fold_history = None
 
         # 执行交叉验证
         for fold_idx, (train_ids, val_ids) in enumerate(
@@ -254,6 +310,12 @@ class CNN1DClassifier(nn.Module):
             # 训练这一折
             fold_best_acc = 0.0
             fold_best_weights = None
+            fold_history = {
+                'train_loss': [],
+                'train_acc': [],
+                'val_loss': [],
+                'val_acc': [],
+            }
 
             # 定义学习率调度器
             # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -262,7 +324,7 @@ class CNN1DClassifier(nn.Module):
 
             # 定义早停规则
             patience_counter = 0
-            patience_limit = 20  # 先放宽一点
+            patience_limit = 10
 
             for epoch in range(num_epochs):
                 self.train()
@@ -277,7 +339,7 @@ class CNN1DClassifier(nn.Module):
                     outputs = self(inputs)
                     loss = criterion(outputs, labels)
                     loss.backward()
-                    # torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)   # 梯度裁剪（暂时不用）  
+                    # torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)   # 梯度裁剪（暂时不用）
                     optimizer.step()
 
                     running_loss += loss.item() * inputs.size(0)
@@ -292,6 +354,9 @@ class CNN1DClassifier(nn.Module):
                     f'Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Acc: {epoch_acc:.4f}',
                     end='',
                 )
+
+                fold_history['train_loss'].append(epoch_loss)
+                fold_history['train_acc'].append(epoch_acc)
 
                 # 在验证集上评估
                 self.eval()
@@ -308,6 +373,9 @@ class CNN1DClassifier(nn.Module):
                 val_acc = val_correct / val_total
                 val_loss = running_loss / len(val_subsampler)
                 print(f', Val Acc: {val_acc:.4f}, Val Loss: {val_loss:.4f}')
+
+                fold_history['val_loss'].append(val_loss)
+                fold_history['val_acc'].append(val_acc)
 
                 # 早停策略
                 if val_acc > fold_best_acc:
@@ -332,6 +400,7 @@ class CNN1DClassifier(nn.Module):
             if fold_best_acc > best_acc:
                 best_acc = fold_best_acc
                 best_weights = fold_best_weights
+                self.best_fold_history = fold_history
 
             print(
                 f'Fold {fold_idx + 1} best validation accuracy: {fold_best_acc:.4f}'
@@ -345,6 +414,13 @@ class CNN1DClassifier(nn.Module):
             )
 
         return self
+
+    def get_training_history(self):
+        """返回训练过程的历史记录"""
+        if hasattr(self, "best_fold_history"):
+            return self.best_fold_history
+
+        return None
 
     def predict_proba(self, X):
         """返回每个样本的类别概率估计"""
@@ -406,28 +482,29 @@ class FixedOutputCNN:
 
 class ModelWrapper:
     """模型包装类，封装模型和对应的标签映射
-    
+
     属性:
         model: CNN1DClassifier 或 FixedOutputCNN 的实例
         label_map: 可选的标签映射字典
     """
+
     def __init__(self, model, label_map=None):
         self.model = model
         self.label_map = label_map
-    
+
     def to(self, device):
         """将模型移动到指定设备"""
         self.model.to(device)
         return self
-    
+
     def fit_cv(self, X, y, **kwargs):
         """训练模型"""
         return self.model.fit_cv(X, y, **kwargs)
-    
+
     def predict_proba(self, X):
         """返回概率预测结果"""
         return self.model.predict_proba(X)
-    
+
     def predict(self, X):
         """返回预测类别"""
         return self.model.predict(X)
@@ -441,7 +518,7 @@ class OrdinalCrossEntropyLoss(nn.Module):
     def __init__(self, alpha=0.5, num_classes=None):
         """
         Args:
-            alpha: 损失函数的权重参数，空值距离损失和交叉熵损失的比例
+            alpha: 损失函数的权重参数，控制距离损失和交叉熵损失的比例
             num_classes: 类别数量，用于归一化距离损失
         """
         super(OrdinalCrossEntropyLoss, self).__init__()
@@ -454,13 +531,17 @@ class OrdinalCrossEntropyLoss(nn.Module):
         ce_loss = self.ce_loss(outputs, targets)
         # 计算距离损失
         softmax_probs = F.softmax(outputs, dim=1)
-        class_indices = torch.arange(outputs.size(1), device=outputs.device).float()
-        expected_classes = torch.sum(softmax_probs * class_indices.unsqueeze(0), dim=1)
-        distance_loss = torch.abs(expected_classes - targets.float())
+        class_indices = torch.arange(
+            outputs.size(1), device=outputs.device
+        ).float()
+        expected_classes = torch.sum(
+            softmax_probs * class_indices.unsqueeze(0), dim=1
+        )
+        distance_loss = torch.square(expected_classes - targets.float())
         # 归一化距离损失项
         if self.num_classes and self.num_classes > 1:
             distance_loss = distance_loss / (self.num_classes - 1)
-        
+
         combined_loss = ce_loss + self.alpha * distance_loss
 
         return combined_loss.mean()

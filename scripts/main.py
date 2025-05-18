@@ -23,6 +23,7 @@ from src.pipeline.split.train_test_splitter import TrainTestSplitter
 from src.pipeline.classification.svc import SVM
 from src.pipeline.classification.cnn import CNN
 from src.pipeline.classification.lda import LDAC
+from src.pipeline.classification.rrc import RRC
 
 from src.config.config import ExperimentConfig
 
@@ -47,6 +48,7 @@ def setup_factories():
     model_trainer_factory.register("svm", SVM)
     model_trainer_factory.register("cnn", CNN)
     model_trainer_factory.register("lda", LDAC)
+    model_trainer_factory.register("rrc", RRC)
 
     return {
         "data_loader_factory": data_loader_factory,
@@ -67,7 +69,7 @@ def load_config(config_type: str, yaml_path: str) -> ExperimentConfig | None:
 
 if __name__ == "__main__":
     # 加载配置文件
-    config = load_config("experiment", "src/config/flip_minirocket_lda.yaml")
+    config = load_config("experiment", "src/config/gait_minirocket_lda.yaml")
 
     # 初始化工厂
     factories = setup_factories()

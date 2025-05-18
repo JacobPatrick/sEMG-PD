@@ -4,11 +4,19 @@ from sklearn.metrics import confusion_matrix
 from typing import List
 
 
+colors = {
+    "red1": "#B72230",
+    "red2": "#DC6D57",
+    "blue1": "#317CB7",
+    "blue2": "#6DADD1",
+}
+
+
 def plot_confusion_matrix(
     label_true: List[int],
     label_pred: List[int],
     classes: List[str],
-    title: str,
+    title: str = None,
     save_path: str = None,
     dpi: int = 300,
 ) -> None:
@@ -45,19 +53,22 @@ def plot_confusion_matrix(
             cm = cm_raw / row_sums
         cm = np.nan_to_num(cm)
 
-    plt.rcParams["font.sans-serif"] = ["SimHei"]
+    plt.rcParams["font.sans-serif"] = ["FangSong"]
+    plt.rcParams["font.size"] = 14
     plt.rcParams["axes.unicode_minus"] = False
 
+    plt.figure(figsize=(3, 3))
+
     plt.imshow(cm, cmap="Blues")
-    plt.title(title)
+    # plt.title(title)
     plt.xlabel("预测得分")
-    plt.ylabel("实际得分")
+    plt.ylabel("真实得分")
     plt.xticks(range(classes.__len__()), classes, rotation=45)
     plt.yticks(range(classes.__len__()), classes)
 
     plt.tight_layout()
 
-    plt.colorbar()
+    # plt.colorbar()
 
     thresh = cm.max() / 2.0
     for i in range(classes.__len__()):
@@ -70,3 +81,87 @@ def plot_confusion_matrix(
         plt.savefig(save_path, bbox_inches="tight", dpi=dpi)
     else:
         plt.show()
+
+    plt.close()
+
+
+def plot_training_curve(model, save_path=None, title=None, figsize=(3, 3)):
+    """绘制训练曲线，左侧y轴显示loss，右侧y轴显示accuracy
+
+    参数:
+        model: 训练好的模型，必须实现get_training_history()方法
+        save_path: 图像保存路径，如果为None则不保存
+        title: 图像标题，默认为None
+        figsize: 图像大小，默认为(5, 4)
+    """
+    history = model.get_training_history()
+    if not history:
+        print("没有可用的训练历史记录")
+        return None
+
+    plt.rcParams["font.sans-serif"] = ["FangSong"]
+    plt.rcParams["font.size"] = 14
+    plt.rcParams["axes.unicode_minus"] = False
+
+    # 创建具有较大右边距的图形和坐标轴
+    fig = plt.figure(figsize=figsize)
+    # 调整子图边距，增加右边距以容纳准确率为1的情况
+    ax1 = fig.add_subplot(111)
+
+    # 左侧Y轴 - 损失
+    max_loss = max(max(history['train_loss']), max(history['val_loss']))
+    ax1.set_xlabel('训练轮数')
+    ax1.set_ylabel('损失函数值')
+    ax1.set_ylim(0, max_loss * 1.05)
+    ax1.plot(
+        history['train_loss'],
+        color=colors['blue1'],
+        linestyle='-',
+        label='训练损失',
+    )
+    ax1.plot(
+        history['val_loss'],
+        color=colors['red1'],
+        linestyle='-',
+        label='验证损失',
+    )
+    ax1.tick_params(axis='y')
+
+    # 右侧Y轴 - 准确率
+    ax2 = ax1.twinx()
+    # 准确率范围保持0-1，但确保刻度标签能够显示
+    ax2.set_ylim(0, 1.1)
+    ax2.set_yticks(np.arange(0, 1.2, 0.2))
+    ax2.set_ylabel('准确率')
+    ax2.plot(
+        history['train_acc'],
+        color=colors["blue1"],
+        linestyle='--',
+        label='训练准确率',
+    )
+    ax2.plot(
+        history['val_acc'],
+        color=colors['red1'],
+        linestyle='--',
+        label='验证准确率',
+    )
+    ax2.tick_params(axis='y')
+
+    # 确保两个轴的图例都显示
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    # ax1.legend(lines1 + lines2, labels1 + labels2, loc='best')
+
+    # 添加标题
+    if title:
+        plt.title(title)
+
+    # 调整布局，增加顶部的空间
+    plt.subplots_adjust(top=0.9)
+
+    # 保存图像
+    if save_path:
+        plt.savefig(save_path, bbox_inches="tight", dpi=300)
+        print(f"训练曲线已保存至 {save_path}")
+
+    return fig

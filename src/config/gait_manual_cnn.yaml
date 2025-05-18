@@ -1,0 +1,16 @@
+data:
+  data_dir: "data/"
+  data_name: "gait.npz"
+  data_loader: "new_loader"
+
+feature:
+  feature_extractor: "manual"
+
+split:
+  split_type: "train_val_test_split"
+
+train:
+  model_name: "gait_manual_cnn"
+  model_type: "cnn"
+  model_dir: "model"
+  report_dir: "reports"

@@ -40,6 +40,11 @@ class MLPipeline(ABC):
         # 2. 特征提取
         print("Extracting features...")
         features = self.extract_features(dataset, config.feature)
+        np.savez_compressed(
+            "reports/gait_minirocket_features.npz",
+            data=features[0],
+            labels=features[1][:, 1],
+        )
         # 3. train-test 划分
         print("Splitting data...")
         splitted_data = self.split_data(features, config.split)
@@ -150,7 +155,8 @@ class StandardMLPipeline(MLPipeline):
             )
             try:
                 with open(
-                    config.report_dir + f"/train_results_{i}.txt", "w"
+                    config.report_dir + f"/{config.model_name}_train_{i}.txt",
+                    "w",
                 ) as f:
                     f.write(
                         f"y=\n{results[0][:, i]}\n\ny_pred=\n{results[1][:, i]}\n\n{evaluation}"
@@ -185,16 +191,18 @@ class StandardMLPipeline(MLPipeline):
         tester = self.model_trainer_factory.create(tester_type, models=models)
 
         results = tester.predict(features)
+        # soft_results = tester.predict_proba(features)
         for i in range(len(models)):
             evaluation = evaluate_classification(
                 results[0][:, i], results[1][:, i]
             )
             try:
                 with open(
-                    config.report_dir + f"/test_results_{i}.txt", "w"
+                    config.report_dir + f"/{config.model_name}_test_{i}.txt",
+                    "w",
                 ) as f:
                     f.write(
-                        f"y=\n{results[0][:, i]}\n\ny_pred=\n{results[1][:, i]}\n\n{evaluation}"
+                        f"y=\n{results[0][:, i]}\n\ny_pred=\n{results[1][:, i]}\n\n{evaluation}"  # \n\nsoft_y_pred=\n{soft_results[1][:, :, i]}
                     )
             except Exception as e:
                 print(f"Error saving test results: {e}")
