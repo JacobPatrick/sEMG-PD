@@ -17,6 +17,7 @@ split:
   split_type: "train_val_test_split"
 
 train:
+  model_name: "r_flip_manual_cnn"
   model_type: "cnn"
   model_dir: "model"
   report_dir: "reports"

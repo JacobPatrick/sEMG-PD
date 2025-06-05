@@ -26,7 +26,7 @@ class MiniRocketFeatureExtractor(FeatureExtractor):
             dilations,
             num_features_per_dilation,
             biases,
-        ) = fit(data, num_features=500, max_dilations_per_kernel=16)
+        ) = fit(data, num_features=1176, max_dilations_per_kernel=16)
 
         # 数据转换
         features = transform(
@@ -39,5 +39,6 @@ class MiniRocketFeatureExtractor(FeatureExtractor):
                 biases,
             ),
         )
+        print(f"features shape: {features.shape}")
 
         return features, labels

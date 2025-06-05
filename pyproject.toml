@@ -9,9 +9,20 @@ authors = [
     { name="Jacob Patrick", email="lumivoxflow@gmail.com" }
 ]
 dependencies = [
-    "numpy>=1.18.0",
-    "pandas>=1.0.0",
-    "matplotlib>=3.0.0",
+    "numpy>=1.26.0",
+    "pandas>=2.1.1",
+    "matplotlib>=3.8.0",
+    "black>=25.1.0",
+    "joblib>=1.4.2",
+    "numba>=0.61.2",
+    "pywavelets>=1.8.0",
+    "pyyaml>=6.0.2",
+    "scikit-learn>=1.6.1",
+    "scipy>=1.11.3",
+    "seaborn>=0.13.2",
+    "sktime>=0.37.0",
+    "torch>=2.5.1",
+    "tsai>=0.4.0"
 ]
 
 [tool.black]

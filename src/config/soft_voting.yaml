@@ -1,10 +1,10 @@
 data:
   data_dir: "data/"
-  data_name: "gait.npz"
+  data_name: "r_gait_1.npz"
   data_loader: "new_loader"
 
 feature:
-  feature_extractor: "manual"
+  feature_extractor: "minirocket"
   window_size: 0.2
   overlap: 0.1
   sampling_rate: 2000
@@ -17,7 +17,7 @@ split:
   split_type: "train_val_test_split"
 
 train:
-  model_name: "gait_manual_cnn"
-  model_type: "cnn"
+  model_name: "gait_minirocket_lda"
+  model_type: "lda"
   model_dir: "model"
   report_dir: "reports"

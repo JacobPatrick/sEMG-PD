@@ -1,6 +1,6 @@
 import numpy as np
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple, Any
+from typing import Dict, Tuple, Any
 from src.utils.save_model import save_model
 from src.utils.model_evaluation import evaluate_classification
 from src.config.config import (
@@ -33,18 +33,12 @@ class MLPipeline(ABC):
         Returns:
             包含交叉验证、测试结果和训练模型的字典
         """
-        # TODO: 定义算法骨架
         # 1. 加载数据集
         print("Loading data...")
         dataset = self.load_data(config.data)
         # 2. 特征提取
         print("Extracting features...")
         features = self.extract_features(dataset, config.feature)
-        np.savez_compressed(
-            "reports/gait_minirocket_features.npz",
-            data=features[0],
-            labels=features[1][:, 1],
-        )
         # 3. train-test 划分
         print("Splitting data...")
         splitted_data = self.split_data(features, config.split)

@@ -36,46 +36,110 @@ def plot_confusion_matrix(
     """
     full_labels = list(range(len(classes)))
 
-    try:
-        cm = confusion_matrix(
-            y_true=label_true,
-            y_pred=label_pred,
-            labels=full_labels,
-            normalize='true',
-        )
-    except ValueError as e:
-        # 对于全零行，手动归一化
-        cm_raw = confusion_matrix(
-            y_true=label_true, y_pred=label_pred, labels=full_labels
-        )
-        row_sums = cm_raw.sum(axis=1, keepdims=True)
-        with np.errstate(divide='ignore', invalid='ignore'):
-            cm = cm_raw / row_sums
-        cm = np.nan_to_num(cm)
+    # try:
+    #     cm = confusion_matrix(
+    #         y_true=label_true,
+    #         y_pred=label_pred,
+    #         labels=full_labels,
+    #         normalize='true',
+    #     )
+    # except ValueError as e:
+    #     # 对于全零行，手动归一化
+    #     cm_raw = confusion_matrix(
+    #         y_true=label_true, y_pred=label_pred, labels=full_labels
+    #     )
+    #     row_sums = cm_raw.sum(axis=1, keepdims=True)
+    #     with np.errstate(divide='ignore', invalid='ignore'):
+    #         cm = cm_raw / row_sums
+    #     cm = np.nan_to_num(cm)
 
+    # plt.rcParams["font.sans-serif"] = ["FangSong"]
+    # plt.rcParams["font.size"] = 12
+    # plt.rcParams["axes.unicode_minus"] = False
+
+    # plt.figure(figsize=(3, 3))
+
+    # plt.imshow(cm, cmap="Blues")
+    # # plt.title(title)
+    # plt.xlabel("预测得分")
+    # plt.ylabel("真实得分")
+    # plt.xticks(range(classes.__len__()), classes, rotation=45)
+    # plt.yticks(range(classes.__len__()), classes)
+
+    # plt.tight_layout()
+
+    # # plt.colorbar()
+
+    # thresh = cm.max() / 2.0
+    # for i in range(classes.__len__()):
+    #     for j in range(classes.__len__()):
+    #         color = (1, 1, 1) if cm[j, i] > thresh else (0, 0, 0)
+    #         value = float(f"{cm[j, i]:.2f}")
+    #         plt.text(i, j, value, ha="center", va="center", color=color)
+
+    # if save_path:
+    #     plt.savefig(save_path, bbox_inches="tight", dpi=dpi)
+    # else:
+    #     plt.show()
+
+    # plt.close()
+
+    # 计算原始混淆矩阵（不归一化）
+    cm_raw = confusion_matrix(
+        y_true=label_true, y_pred=label_pred, labels=full_labels
+    )
+    
+    # 计算总样本数
+    total_samples = np.sum(cm_raw)
+    
+    # 计算每个单元格的全局百分比
+    cm_percent = cm_raw / total_samples
+    
+    # 行归一化（每行代表真实类别，归一化后表示该真实类别被预测为各类别的比例）
+    row_sums = cm_raw.sum(axis=1, keepdims=True)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        cm = cm_raw / row_sums
+    cm = np.nan_to_num(cm)
+    
+    # 注意：由于需要交换轴，这里需要转置混淆矩阵
+    # 转置前：行是真实值，列是预测值
+    # 转置后：行是预测值，列是真实值（符合你要求的x轴为真值，y轴为预测值）
+    cm = cm.T
+    cm_percent = cm_percent.T
+    
     plt.rcParams["font.sans-serif"] = ["FangSong"]
-    plt.rcParams["font.size"] = 14
+    plt.rcParams["font.size"] = 12
     plt.rcParams["axes.unicode_minus"] = False
 
-    plt.figure(figsize=(3, 3))
+    plt.figure(figsize=(4, 4))
 
     plt.imshow(cm, cmap="Blues")
-    # plt.title(title)
-    plt.xlabel("预测得分")
-    plt.ylabel("真实得分")
-    plt.xticks(range(classes.__len__()), classes, rotation=45)
+    if title:
+        plt.title(title)
+    plt.xlabel("真实得分")  # 交换后x轴为真实标签
+    plt.ylabel("预测得分")  # 交换后y轴为预测标签
+    plt.xticks(range(classes.__len__()), classes)
     plt.yticks(range(classes.__len__()), classes)
 
     plt.tight_layout()
 
-    # plt.colorbar()
-
     thresh = cm.max() / 2.0
-    for i in range(classes.__len__()):
-        for j in range(classes.__len__()):
+    for i in range(classes.__len__()):  # i是真实类别（现在是x轴）
+        for j in range(classes.__len__()):  # j是预测类别（现在是y轴）
+            # 确定文本颜色
             color = (1, 1, 1) if cm[j, i] > thresh else (0, 0, 0)
-            value = float(f"{cm[j, i]:.2f}")
-            plt.text(i, j, value, ha="center", va="center", color=color)
+            
+            # 获取归一化值（预测为j类别的i类别样本比例）
+            norm_value = float(f"{cm[j, i]:.2f}")
+            
+            # 获取全局百分比（占总样本的百分比）
+            percent = cm_percent[j, i] * 100
+            
+            # 组合文本显示
+            text = f"{norm_value:.2f}\n({percent:.1f}%)"
+            
+            # 在单元格中显示文本
+            plt.text(i, j, text, ha="center", va="center", color=color, fontsize=10)
 
     if save_path:
         plt.savefig(save_path, bbox_inches="tight", dpi=dpi)

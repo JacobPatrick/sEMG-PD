@@ -1,9 +1,9 @@
-import os, sys
+import os
+import sys
 
 curr_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, curr_path + "/..")
 
-from src.config.config import load_config
 from src.core.factories import (
     DataLoaderFactory,
     FeatureExtractorFactory,
@@ -69,7 +69,7 @@ def load_config(config_type: str, yaml_path: str) -> ExperimentConfig | None:
 
 if __name__ == "__main__":
     # 加载配置文件
-    config = load_config("experiment", "src/config/gait_minirocket_lda.yaml")
+    config = load_config("experiment", "src/config/test1.yaml")
 
     # 初始化工厂
     factories = setup_factories()

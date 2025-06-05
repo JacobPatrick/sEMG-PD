@@ -1,6 +1,6 @@
 data:
   data_dir: "data/"
-  data_name: "gait.npz"
+  data_name: "rest_tremor_constancy.npz"
   data_loader: "new_loader"
 
 feature:
@@ -10,7 +10,7 @@ split:
   split_type: "train_val_test_split"
 
 train:
-  model_name: "gait_minirocket_svm_linear"
-  model_type: "svm"
+  model_name: "tremor_constancy_minirocket_rrc"
+  model_type: "rrc"
   model_dir: "model"
   report_dir: "reports"

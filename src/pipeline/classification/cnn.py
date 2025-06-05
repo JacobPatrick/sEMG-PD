@@ -59,6 +59,9 @@ class CNN(Classification):
                     ModelWrapper(model=cnn_model, label_map=label_map)
                 )
 
+                # 存储模型
+                torch.save(cnn_model, f"model/gait_manual_cnn_{i}.pth")
+
                 # 绘制训练曲线
                 history = cnn_model.get_training_history()
                 if not history:
@@ -83,7 +86,7 @@ class CNN(Classification):
 
                 # 创建模型并训练
                 cnn_model = CNN1DClassifier(
-                    input_size=n_samples * n_features,
+                    input_size=n_channels * n_features,
                     num_classes=len(unique_labels),
                     num_windows=n_windows,
                 ).to(device)
@@ -95,6 +98,9 @@ class CNN(Classification):
                 self.models.append(
                     ModelWrapper(model=cnn_model, label_map=label_map)
                 )
+
+                # 存储模型
+                torch.save(cnn_model, f"model/gait_manual_cnn_{i}.pth")
 
         return self.models
 
